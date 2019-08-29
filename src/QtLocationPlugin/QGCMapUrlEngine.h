@@ -120,7 +120,6 @@ private:
     QString         _versionGoogleSatellite;
     QString         _versionGoogleLabels;
     QString         _versionGoogleTerrain;
-    QString         _versionGoogleHybrid;
     QString         _secGoogleWord;
 #endif
 
