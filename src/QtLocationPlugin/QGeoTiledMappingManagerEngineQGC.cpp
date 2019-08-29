@@ -109,6 +109,8 @@ QGeoTiledMappingManagerEngineQGC::QGeoTiledMappingManagerEngineQGC(const QVarian
     mapTypes << QGCGEOMAPTYPE(QGeoMapType::StreetMap,         "Google Street Map",        "Google street map",            false,  false,  UrlFactory::GoogleMap);
     mapTypes << QGCGEOMAPTYPE(QGeoMapType::SatelliteMapDay,   "Google Satellite Map",     "Google satellite map",         false,  false,  UrlFactory::GoogleSatellite);
     mapTypes << QGCGEOMAPTYPE(QGeoMapType::TerrainMap,        "Google Terrain Map",       "Google terrain map",           false,  false,  UrlFactory::GoogleTerrain);
+    // try hybrid
+    mapTypes << QGCGEOMAPTYPE(QGeoMapType::HybridMap,        "Google Hybrid Map",       "Google hybrid map",           false,  false,  UrlFactory::GoogleHybrid);
 #endif
 
     /* TODO:
