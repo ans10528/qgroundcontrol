@@ -108,7 +108,7 @@ QGeoTiledMappingManagerEngineQGC::QGeoTiledMappingManagerEngineQGC(const QVarian
         QGCGEOMAPTYPE(QGeoMapType::StreetMap,         "Google Street Map",        "Google street map",            false,  false,  UrlFactory::GoogleMap),
         QGCGEOMAPTYPE(QGeoMapType::SatelliteMapDay,   "Google Satellite Map",     "Google satellite map",         false,  false,  UrlFactory::GoogleSatellite),
         QGCGEOMAPTYPE(QGeoMapType::TerrainMap,        "Google Terrain Map",       "Google terrain map",           false,  false,  UrlFactory::GoogleTerrain),
-        QGCGEOMAPTYPE(QGeoMapType::HybridMap,         "Google Hybrid Map",        "Google hybrid map",            false,  false,  UrlFactory::GoogleHybrid);
+        QGCGEOMAPTYPE(QGeoMapType::HybridMap,         "Google Hybrid Map",        "Google hybrid map",            false,  false,  UrlFactory::GoogleHybrid),
 #endif
 
     // Bing
