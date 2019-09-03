@@ -18,13 +18,17 @@ import QGroundControl.SettingsManager   1.0
 /// Map scale control
 Item {
     id:     scale
-    width:  rightEnd.x + rightEnd.width
+    width:  zoomButtonsOnLeft || !_zoomButtonsVisible ? rightEnd.x + rightEnd.width : zoomDownButton.x + zoomDownButton.width
     height: rightEnd.y + rightEnd.height
 
-    property var    mapControl                                                          ///< Map control for which this scale control is being used
+    property var    mapControl                  ///< Map control for which this scale control is being used
+    property bool   zoomButtonsVisible: true
+    property bool   zoomButtonsOnLeft:  true    ///< Zoom buttons to left/right of scale bar
 
     property variant _scaleLengthsMeters: [5, 10, 25, 50, 100, 150, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000]
     property variant _scaleLengthsFeet: [10, 25, 50, 100, 250, 500, 1000, 2000, 3000, 4000, 5280, 5280*2, 5280*5, 5280*10, 5280*25, 5280*50, 5280*100, 5280*250, 5280*500, 5280*1000]
+
+    property bool _zoomButtonsVisible:  zoomButtonsVisible && !ScreenTools.isMobile // Zoom buttons don't show on mobile since finger pinch works fine
 
     property var _color: mapControl.isSatelliteMap ? "white" : "black"
 
@@ -110,70 +114,95 @@ Item {
     }
 
     function calculateScale() {
-        var scaleLinePixelLength = 100
-        var leftCoord = mapControl.toCoordinate(Qt.point(0, scale.y), false /* clipToViewPort */)
-        var rightCoord = mapControl.toCoordinate(Qt.point(scaleLinePixelLength, scale.y), false /* clipToViewPort */)
-        var scaleLineMeters = Math.round(leftCoord.distanceTo(rightCoord))
-
-        if (QGroundControl.settingsManager.unitsSettings.distanceUnits.value === UnitsSettings.DistanceUnitsFeet) {
-            calculateFeetRatio(scaleLineMeters, scaleLinePixelLength)
-        } else {
-            calculateMetersRatio(scaleLineMeters, scaleLinePixelLength)
+        if(mapControl) {
+            var scaleLinePixelLength = 100
+            var leftCoord  = mapControl.toCoordinate(Qt.point(0, scale.y), false /* clipToViewPort */)
+            var rightCoord = mapControl.toCoordinate(Qt.point(scaleLinePixelLength, scale.y), false /* clipToViewPort */)
+            var scaleLineMeters = Math.round(leftCoord.distanceTo(rightCoord))
+            if (QGroundControl.settingsManager.unitsSettings.distanceUnits.value === UnitsSettings.DistanceUnitsFeet) {
+                calculateFeetRatio(scaleLineMeters, scaleLinePixelLength)
+            } else {
+                calculateMetersRatio(scaleLineMeters, scaleLinePixelLength)
+            }
         }
     }
 
     Connections {
-        target: mapControl
-
-        onWidthChanged: scaleTimer.restart()
-        onHeightChanged: scaleTimer.restart()
+        target:             mapControl
+        onWidthChanged:     scaleTimer.restart()
+        onHeightChanged:    scaleTimer.restart()
         onZoomLevelChanged: scaleTimer.restart()
     }
 
     Timer {
-        id:         scaleTimer
-        interval:   100
-        running:    false
-        repeat:     false
-
-        onTriggered: calculateScale()
+        id:                 scaleTimer
+        interval:           100
+        running:            false
+        repeat:             false
+        onTriggered:        calculateScale()
     }
 
     QGCMapLabel {
-        id:                     scaleText
-        map:                    mapControl
-        font.family:            ScreenTools.demiboldFontFamily
-        anchors.left:           parent.left
-        anchors.right:          parent.right
-        horizontalAlignment:    Text.AlignRight
-        text:                   "0 m"
+        id:                 scaleText
+        map:                mapControl
+        font.family:        ScreenTools.demiboldFontFamily
+        anchors.left:       parent.left
+        anchors.right:      rightEnd.right
+        horizontalAlignment:Text.AlignRight
+        text:               "0 m"
     }
 
     Rectangle {
-        id:             leftEnd
-        anchors.top:    scaleText.bottom
-        anchors.left:   parent.left
-        width:          2
-        height:         ScreenTools.defaultFontPixelHeight
-        color:          _color
+        id:                 leftEnd
+        anchors.top:        scaleText.bottom
+        anchors.leftMargin: zoomButtonsOnLeft && _zoomButtonsVisible ? ScreenTools.defaultFontPixelWidth / 2 : 0
+        anchors.left:       zoomButtonsOnLeft && _zoomButtonsVisible ? zoomDownButton.right : parent.left
+        width:              2
+        height:             ScreenTools.defaultFontPixelHeight
+        color:              _color
     }
 
     Rectangle {
-        id:                     centerLine
+        id:                 centerLine
         anchors.bottomMargin:   2
-        anchors.bottom:         leftEnd.bottom
-        anchors.left:           leftEnd.right
-        height:                 2
-        color:                  _color
+        anchors.bottom:     leftEnd.bottom
+        anchors.left:       leftEnd.right
+        height:             2
+        color:              _color
     }
 
     Rectangle {
-        id:             rightEnd
-        anchors.top:    leftEnd.top
-        anchors.left:   centerLine.right
-        width:          2
-        height:         ScreenTools.defaultFontPixelHeight
-        color:          _color
+        id:                 rightEnd
+        anchors.top:        leftEnd.top
+        anchors.left:       centerLine.right
+        width:              2
+        height:             ScreenTools.defaultFontPixelHeight
+        color:              _color
+    }
+
+    QGCButton {
+        id:                 zoomUpButton
+        anchors.top:        scaleText.top
+        anchors.bottom:     rightEnd.bottom
+        anchors.leftMargin: zoomButtonsOnLeft ? 0 : ScreenTools.defaultFontPixelWidth / 2
+        anchors.left:       zoomButtonsOnLeft ? parent.left : rightEnd.right
+        text:               qsTr("+")
+        width:              height
+        opacity:            0.75
+        visible:            _zoomButtonsVisible
+        onClicked:          mapControl.zoomLevel += 0.5
+    }
+
+    QGCButton {
+        id:                 zoomDownButton
+        anchors.leftMargin: ScreenTools.defaultFontPixelWidth / 2
+        anchors.left:       zoomUpButton.right
+        text:               qsTr("-")
+        height:             zoomUpButton.height
+        width:              zoomUpButton.width
+        opacity:            0.75
+        visible:            _zoomButtonsVisible
+        onClicked:          mapControl.zoomLevel -= 0.5
     }
 
     Component.onCompleted: {

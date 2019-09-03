@@ -15,8 +15,6 @@
 #include "FirmwarePlugin/APM/ArduCopterFirmwarePlugin.h"
 #include "VehicleComponent.h"
 #include "APMAirframeComponent.h"
-#include "APMAirframeComponentAirframes.h"
-#include "APMAirframeLoader.h"
 #include "APMFlightModesComponent.h"
 #include "APMRadioComponent.h"
 #include "APMSafetyComponent.h"
@@ -30,6 +28,7 @@
 #include "ESP8266Component.h"
 #include "APMHeliComponent.h"
 #include "QGCApplication.h"
+#include "ParameterManager.h"
 
 #if !defined(NO_SERIAL_LINK) && !defined(__android__)
 #include <QSerialPortInfo>
@@ -39,23 +38,20 @@
 APMAutoPilotPlugin::APMAutoPilotPlugin(Vehicle* vehicle, QObject* parent)
     : AutoPilotPlugin           (vehicle, parent)
     , _incorrectParameterVersion(false)
-    , _airframeComponent        (NULL)
-    , _cameraComponent          (NULL)
-    , _lightsComponent          (NULL)
-    , _subFrameComponent        (NULL)
-    , _flightModesComponent     (NULL)
-    , _powerComponent           (NULL)
-    , _motorComponent           (NULL)
-    , _radioComponent           (NULL)
-    , _safetyComponent          (NULL)
-    , _sensorsComponent         (NULL)
-    , _tuningComponent          (NULL)
-    , _airframeFacts            (new APMAirframeLoader(this, vehicle->uas(), this))
-    , _esp8266Component         (NULL)
-    , _heliComponent            (NULL)
+    , _airframeComponent        (nullptr)
+    , _cameraComponent          (nullptr)
+    , _lightsComponent          (nullptr)
+    , _subFrameComponent        (nullptr)
+    , _flightModesComponent     (nullptr)
+    , _powerComponent           (nullptr)
+    , _motorComponent           (nullptr)
+    , _radioComponent           (nullptr)
+    , _safetyComponent          (nullptr)
+    , _sensorsComponent         (nullptr)
+    , _tuningComponent          (nullptr)
+    , _esp8266Component         (nullptr)
+    , _heliComponent            (nullptr)
 {
-    APMAirframeLoader::loadAirframeFactMetaData();
-
 #if !defined(NO_SERIAL_LINK) && !defined(__android__)
     connect(vehicle->parameterManager(), &ParameterManager::parametersReadyChanged, this, &APMAutoPilotPlugin::_checkForBadCubeBlack);
 #endif

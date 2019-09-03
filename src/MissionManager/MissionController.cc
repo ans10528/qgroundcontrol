@@ -31,11 +31,6 @@
 #include "KML.h"
 #include "QGCCorePlugin.h"
 
-#ifndef __mobile__
-#include "MainWindow.h"
-#include "QGCQFileDialog.h"
-#endif
-
 #define UPDATE_TIMEOUT 5000 ///< How often we check for bounding box changes
 
 QGC_LOGGING_CATEGORY(MissionControllerLog, "MissionControllerLog")
@@ -1668,7 +1663,7 @@ void MissionController::_initVisualItem(VisualMissionItem* visualItem)
 void MissionController::_deinitVisualItem(VisualMissionItem* visualItem)
 {
     // Disconnect all signals
-    disconnect(visualItem, 0, 0, 0);
+    disconnect(visualItem, nullptr, nullptr, nullptr);
 }
 
 void MissionController::_itemCommandChanged(void)
@@ -1682,8 +1677,8 @@ void MissionController::managerVehicleChanged(Vehicle* managerVehicle)
     if (_managerVehicle) {
         _missionManager->disconnect(this);
         _managerVehicle->disconnect(this);
-        _managerVehicle = NULL;
-        _missionManager = NULL;
+        _managerVehicle = nullptr;
+        _missionManager = nullptr;
     }
 
     _managerVehicle = managerVehicle;
@@ -2061,7 +2056,7 @@ VisualMissionItem* MissionController::currentPlanViewItem(void) const
 void MissionController::setCurrentPlanViewIndex(int sequenceNumber, bool force)
 {
     if(_visualItems && (force || sequenceNumber != _currentPlanViewIndex)) {
-        _currentPlanViewItem  = NULL;
+        _currentPlanViewItem  = nullptr;
         _currentPlanViewIndex = -1;
         for (int i = 0; i < _visualItems->count(); i++) {
             VisualMissionItem* pVI = qobject_cast<VisualMissionItem*>(_visualItems->get(i));

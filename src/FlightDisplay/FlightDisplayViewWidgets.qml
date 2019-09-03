@@ -27,20 +27,20 @@ import QGroundControl.Airmap        1.0
 Item {
     id: widgetRoot
 
-    property var    qgcView
+    readonly property real  _rightPanelWidth: Math.min(parent.width / 3, ScreenTools.defaultFontPixelWidth * 30)
+
     property bool   useLightColors
     property var    missionController
     property bool   showValues:             !QGroundControl.airspaceManager.airspaceVisible
 
-    property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
-    property bool   _isSatellite:           _mainIsMap ? (_flightMap ? _flightMap.isSatelliteMap : true) : true
+    property bool   _isSatellite:           mainIsMap ? (mainWindow.flightDisplayMap ? mainWindow.flightDisplayMap.isSatelliteMap : true) : true
     property bool   _lightWidgetBorders:    _isSatellite
     property bool   _airspaceEnabled:       QGroundControl.airmapSupported ? QGroundControl.settingsManager.airMapSettings.enableAirMap.rawValue : false
 
     readonly property real _margins:        ScreenTools.defaultFontPixelHeight * 0.5
+    readonly property bool _useAlternateInstrumentPanel:        QGroundControl.settingsManager.flyViewSettings.alternateInstrumentPanel.value
 
     QGCMapPalette { id: mapPal; lightColors: useLightColors }
-    QGCPalette    { id: qgcPal }
 
     function getPreferredInstrumentWidth() {
         // Don't allow instrument panel to chew more than 1/4 of full window
@@ -75,15 +75,28 @@ Item {
                     break;
                 }
             } else {
-                instrumentsLoader.source = "qrc:/qml/QGCInstrumentWidgetAlternate.qml"
+                if(_useAlternateInstrumentPanel){
+                    instrumentsLoader.source = "qrc:/qml/QGCInstrumentWidgetAlternate.qml"
+                }
+                else{
+                    instrumentsLoader.source = "qrc:/qml/QGCInstrumentWidget.qml"
+                }
             }
         } else {
             instrumentsLoader.source = ""
         }
     }
+    Connections {
+        target:          QGroundControl.settingsManager.flyViewSettings.alternateInstrumentPanel
+        onValueChanged:  _setInstrumentWidget()
+    }
 
     Connections {
         target:         QGroundControl.settingsManager.appSettings.virtualJoystick
+        onValueChanged: _setInstrumentWidget()
+    }
+    Connections {
+        target:         QGroundControl.settingsManager.appSettings.virtualJoystickCentralized
         onValueChanged: _setInstrumentWidget()
     }
 
@@ -120,8 +133,8 @@ Item {
         anchors.top:                parent.verticalCenter
         spacing:                    ScreenTools.defaultFontPixelHeight
 
-        property bool noGPSLockVisible:     _activeVehicle && !_activeVehicle.coordinate.isValid && _mainIsMap
-        property bool prearmErrorVisible:   _activeVehicle && _activeVehicle.prearmError
+        property bool noGPSLockVisible:     activeVehicle && !activeVehicle.coordinate.isValid && mainIsMap
+        property bool prearmErrorVisible:   activeVehicle && activeVehicle.prearmError
 
         QGCLabel {
             anchors.horizontalCenter:   parent.horizontalCenter
@@ -138,7 +151,7 @@ Item {
             z:                          QGroundControl.zOrderTopMost
             color:                      "black"
             font.pointSize:             ScreenTools.largeFontPointSize
-            text:                       _activeVehicle ? _activeVehicle.prearmError : ""
+            text:                       activeVehicle ? activeVehicle.prearmError : ""
         }
 
         QGCLabel {
@@ -164,17 +177,15 @@ Item {
         // Airmap Airspace Control
         AirspaceControl {
             id:                 airspaceControl
-            width:              getPreferredInstrumentWidth()
+            width:              _rightPanelWidth
             planView:           false
             visible:            _airspaceEnabled
-            anchors.margins:    ScreenTools.defaultFontPixelHeight * 0.5
         }
         //-------------------------------------------------------
         //-- Instrument Panel
         Loader {
             id:                         instrumentsLoader
             anchors.margins:            ScreenTools.defaultFontPixelHeight * 0.5
-            property var  qgcView:      widgetRoot.qgcView
             property real maxHeight:    widgetRoot ? widgetRoot.height - instrumentsColumn.y - airspaceControl.height - (ScreenTools.defaultFontPixelHeight * 4) : 0
             states: [
                 State {
@@ -183,8 +194,8 @@ Item {
                         target:                 instrumentsLoader
                         anchors.verticalCenter: undefined
                         anchors.bottom:         undefined
-                        anchors.top:            _root ? _root.top : undefined
-                        anchors.right:          _root ? _root.right : undefined
+                        anchors.top:            widgetRoot ? widgetRoot.top : undefined
+                        anchors.right:          widgetRoot ? widgetRoot.right : undefined
                         anchors.left:           undefined
                     }
                 },
@@ -194,8 +205,8 @@ Item {
                         target:                 instrumentsLoader
                         anchors.top:            undefined
                         anchors.bottom:         undefined
-                        anchors.verticalCenter: _root ? _root.verticalCenter : undefined
-                        anchors.right:          _root ? _root.right : undefined
+                        anchors.verticalCenter: widgetRoot ? widgetRoot.verticalCenter : undefined
+                        anchors.right:          widgetRoot ? widgetRoot.right : undefined
                         anchors.left:           undefined
                     }
                 },
@@ -205,8 +216,8 @@ Item {
                         target:                 instrumentsLoader
                         anchors.top:            undefined
                         anchors.verticalCenter: undefined
-                        anchors.bottom:         _root ? _root.bottom : undefined
-                        anchors.right:          _root ? _root.right : undefined
+                        anchors.bottom:         widgetRoot ? widgetRoot.bottom : undefined
+                        anchors.right:          widgetRoot ? widgetRoot.right : undefined
                         anchors.left:           undefined
                     }
                 },
@@ -216,9 +227,9 @@ Item {
                         target:                 instrumentsLoader
                         anchors.verticalCenter: undefined
                         anchors.bottom:         undefined
-                        anchors.top:            _root ? _root.top : undefined
+                        anchors.top:            widgetRoot ? widgetRoot.top : undefined
                         anchors.right:          undefined
-                        anchors.left:           _root ? _root.left : undefined
+                        anchors.left:           widgetRoot ? widgetRoot.left : undefined
                     }
                 },
                 State {
@@ -227,9 +238,9 @@ Item {
                         target:                 instrumentsLoader
                         anchors.top:            undefined
                         anchors.bottom:         undefined
-                        anchors.verticalCenter: _root ? _root.verticalCenter : undefined
+                        anchors.verticalCenter: widgetRoot ? widgetRoot.verticalCenter : undefined
                         anchors.right:          undefined
-                        anchors.left:           _root ? _root.left : undefined
+                        anchors.left:           widgetRoot ? widgetRoot.left : undefined
                     }
                 },
                 State {
@@ -238,9 +249,9 @@ Item {
                         target:                 instrumentsLoader
                         anchors.top:            undefined
                         anchors.verticalCenter: undefined
-                        anchors.bottom:         _root ? _root.bottom : undefined
+                        anchors.bottom:         widgetRoot ? widgetRoot.bottom : undefined
                         anchors.right:          undefined
-                        anchors.left:           _root ? _root.left : undefined
+                        anchors.left:           widgetRoot ? widgetRoot.left : undefined
                     }
                 }
             ]

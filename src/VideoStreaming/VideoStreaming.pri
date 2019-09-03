@@ -73,11 +73,13 @@ LinuxBuild {
         QMAKE_POST_LINK += $$escape_expand(\\n) xcopy \"$$GST_ROOT_WIN\\lib\\gstreamer-1.0\\validate\\*.dll\" \"$$DESTDIR_WIN\\gstreamer-plugins\\validate\\\" /Y $$escape_expand(\\n)
     }
 } else:AndroidBuild {
-    #- gstreamer assumed to be installed in $$PWD/../../gstreamer-1.0-android-universal-1.14.4/armv7 (or x86)
-    Androidx86Build {
-        GST_ROOT = $$PWD/../../gstreamer-1.0-android-universal-1.14.4/x86
-    } else {
+    #- gstreamer assumed to be installed in $$PWD/../../gstreamer-1.0-android-universal-1.14.4/***
+    contains(QT_ARCH, arm) {
         GST_ROOT = $$PWD/../../gstreamer-1.0-android-universal-1.14.4/armv7
+    } else:contains(QT_ARCH, arm64) {
+        GST_ROOT = $$PWD/../../gstreamer-1.0-android-universal-1.14.4/arm64
+    } else {
+        GST_ROOT = $$PWD/../../gstreamer-1.0-android-universal-1.14.4/x86
     }
     exists($$GST_ROOT) {
         QMAKE_CXXFLAGS  += -pthread
@@ -97,11 +99,13 @@ LinuxBuild {
             -lgstrtpmanager \
             -lgstisomp4 \
             -lgstmatroska \
+            -lgstandroidmedia
 
         # Rest of GStreamer dependencies
         LIBS += -L$$GST_ROOT/lib \
             -lgstfft-1.0 -lm  \
             -lgstnet-1.0 -lgio-2.0 \
+            -lgstphotography-1.0 -lgstgl-1.0 -lEGL \
             -lgstaudio-1.0 -lgstcodecparsers-1.0 -lgstbase-1.0 \
             -lgstreamer-1.0 -lgstrtp-1.0 -lgstpbutils-1.0 -lgstrtsp-1.0 -lgsttag-1.0 \
             -lgstvideo-1.0 -lavformat -lavcodec -lavutil -lx264 -lavfilter -lswresample \

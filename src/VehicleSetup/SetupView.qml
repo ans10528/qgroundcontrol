@@ -98,11 +98,19 @@ Rectangle {
     Component.onCompleted: showSummaryPanel()
 
     Connections {
-        target: QGroundControl.multiVehicleManager
+        target: QGroundControl.corePlugin
+        onShowAdvancedUIChanged: {
+            if(!QGroundControl.corePlugin.showAdvancedUI) {
+                showSummaryPanel()
+            }
+        }
+    }
 
+    Connections {
+        target: QGroundControl.multiVehicleManager
         onParameterReadyVehicleAvailableChanged: {
             if(!QGroundControl.skipSetupPage) {
-                if (parameterReadyVehicleAvailable || summaryButton.checked || setupButtonGroup.current != firmwareButton) {
+                if (QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable || summaryButton.checked || setupButtonGroup.current != firmwareButton) {
                     // Show/Reload the Summary panel when:
                     //      A new vehicle shows up
                     //      The summary panel is already showing and the active vehicle goes away
@@ -116,10 +124,8 @@ Rectangle {
 
     Component {
         id: noComponentsVehicleSummaryComponent
-
         Rectangle {
             color: qgcPal.windowShade
-
             QGCLabel {
                 anchors.margins:        _defaultTextWidth * 2
                 anchors.fill:           parent
@@ -129,7 +135,6 @@ Rectangle {
                 font.pointSize:         ScreenTools.mediumFontPointSize
                 text:                   qsTr("%1 does not currently support setup of your vehicle type. ").arg(QGroundControl.appName) +
                                         "If your vehicle is already configured you can still Fly."
-
                 onLinkActivated: Qt.openUrlExternally(link)
             }
         }
@@ -137,10 +142,8 @@ Rectangle {
 
     Component {
         id: disconnectedVehicleSummaryComponent
-
         Rectangle {
             color: qgcPal.windowShade
-
             QGCLabel {
                 anchors.margins:        _defaultTextWidth * 2
                 anchors.fill:           parent
@@ -149,7 +152,7 @@ Rectangle {
                 wrapMode:               Text.WordWrap
                 font.pointSize:         ScreenTools.largeFontPointSize
                 text:                   qsTr("Vehicle settings and info will display after connecting your vehicle.") +
-                                        (ScreenTools.isMobile ? "" : " Click Firmware on the left to upgrade your vehicle.")
+                                        (ScreenTools.isMobile || !_corePlugin.options.showFirmwareUpgrade ? "" : " Click Firmware on the left to upgrade your vehicle.")
 
                 onLinkActivated: Qt.openUrlExternally(link)
             }

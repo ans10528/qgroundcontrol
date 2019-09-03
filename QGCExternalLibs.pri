@@ -53,6 +53,9 @@ isEmpty(MAVLINK_CONF) {
 contains (CONFIG, QGC_DISABLE_APM_MAVLINK) {
     message("Disable APM MAVLink support")
     DEFINES += NO_ARDUPILOT_DIALECT
+    CONFIG  += ArdupilotDisabled
+} else {
+    CONFIG  += ArdupilotEnabled
 }
 
 # First we select the dialect, checking for valid user selection
@@ -97,15 +100,6 @@ SOURCES += \
     libs/shapelib/safileio.c
 
 #
-# [REQUIRED] QWT plotting library dependency. Provides plotting capabilities.
-#
-!MobileBuild {
-include(libs/qwt.pri)
-DEPENDPATH += libs/qwt
-INCLUDEPATH += libs/qwt
-}
-
-#
 # [REQUIRED] SDL dependency. Provides joystick/gamepad support.
 # The SDL is packaged with QGC for the Mac and Windows. Linux support requires installing the SDL
 # library (development libraries and static binaries).
@@ -121,24 +115,65 @@ MacBuild {
     PKGCONFIG = sdl2
 } else:WindowsBuild {
     INCLUDEPATH += $$BASEDIR/libs/lib/sdl2/msvc/include
+    INCLUDEPATH += $$BASEDIR/libs/zlib/Windows/include
 
     contains(QT_ARCH, i386) {
+        INCLUDEPATH += $$BASEDIR/libs/OpenSSL/Windows/x86/include
         LIBS += -L$$BASEDIR/libs/lib/sdl2/msvc/lib/x86
+        LIBS += -L$$BASEDIR/libs/OpenSSL/Windows/x86/lib
     } else {
+        INCLUDEPATH += $$BASEDIR/libs/OpenSSL/Windows/x64/include
         LIBS += -L$$BASEDIR/libs/lib/sdl2/msvc/lib/x64
+        LIBS += -L$$BASEDIR/libs/OpenSSL/Windows/x64/lib
     }
+    LIBS += -L$$BASEDIR/libs/zlib/Windows/libs
     LIBS += \
         -lSDL2main \
-        -lSDL2
+        -lSDL2 \
+		-lz \
+		-llibeay32
 }
 
+# Include Android OpenSSL libs in order to make Qt OpenSSL support work
 AndroidBuild {
-    contains(QT_ARCH, arm) {
-        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/AndroidOpenSSL/arch-armeabi-v7a/lib/libcrypto.so
-        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/AndroidOpenSSL/arch-armeabi-v7a/lib/libssl.so
+    equals(ANDROID_TARGET_ARCH, armeabi-v7a)  {
+        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/OpenSSL/Android/arch-armeabi-v7a/lib/libcrypto.so
+        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/OpenSSL/Android/arch-armeabi-v7a/lib/libssl.so
+    } else:equals(ANDROID_TARGET_ARCH, arm64-v8a)  {
+        # Haven't figured out how to get 64 bit arm OpenSLL yet. This means things like terrain queries will not qork.
+    } else:equals(ANDROID_TARGET_ARCH, x86)  {
+        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/OpenSSL/Android/arch-x86/lib/libcrypto.so
+        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/OpenSSL/Android/arch-x86/lib/libssl.so
     } else {
-        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/AndroidOpenSSL/arch-x86/lib/libcrypto.so
-        ANDROID_EXTRA_LIBS += $$BASEDIR/libs/AndroidOpenSSL/arch-x86/lib/libssl.so
+        error("Unsupported Android architecture: $${ANDROID_TARGET_ARCH}")
+    }
+}
+
+# Pairing
+contains(DEFINES, QGC_ENABLE_PAIRING) {
+    MacBuild {
+        #- Pairing is generally not supported on macOS. This is here solely for development.
+        exists(/usr/local/Cellar/openssl/1.0.2s/include) {
+            INCLUDEPATH += /usr/local/Cellar/openssl/1.0.2s/include
+            LIBS += -L/usr/local/Cellar/openssl/1.0.2s/lib
+            LIBS += -lcrypto -lz
+        } else {
+            # There is some circular reference settings going on between QGCExternalLibs.pri and gqgroundcontrol.pro.
+            # So this duplicates some of the enable/disable logic which would normally be in qgroundcontrol.pro.
+            DEFINES -= QGC_ENABLE_NFC
+            DEFINES -= QGC_ENABLE_PAIRING
+        }
+    } else {
+        LIBS += -lcrypto -lz
+        AndroidBuild {
+            contains(QT_ARCH, arm) {
+                LIBS += $$ANDROID_EXTRA_LIBS
+                INCLUDEPATH += $$BASEDIR/libs/OpenSSL/Android/arch-armeabi-v7a/include
+            } else {
+                LIBS += $$ANDROID_EXTRA_LIBS
+                INCLUDEPATH += $$BASEDIR/libs/OpenSSL/Android/arch-x86/include
+            }
+        }
     }
 }
 
@@ -169,23 +204,23 @@ contains (DEFINES, DISABLE_AIRMAP) {
 } else:exists(user_config.pri):infile(user_config.pri, DEFINES, DISABLE_AIRMAP) {
     message("Skipping support for AirMap (manual override from user_config.pri)")
 } else {
-    AIRMAPD_PATH = $$PWD/libs/airmapd
-    contains(QT_VERSION, ˆ5\\.11\..*) {
-        MacBuild {
-            exists($${AIRMAPD_PATH}/macOS/Qt.5.11.0) {
-                message("Including support for AirMap for macOS")
-                LIBS += -L$${AIRMAPD_PATH}/macOS/Qt.5.11.0 -lairmap-qt
-                DEFINES += QGC_AIRMAP_ENABLED
-            }
-        } else:LinuxBuild {
-            exists($${AIRMAPD_PATH}/linux/Qt.5.11.0) {
-                message("Including support for AirMap for Linux")
-                LIBS += -L$${AIRMAPD_PATH}/linux/Qt.5.11.0 -lairmap-qt
-                DEFINES += QGC_AIRMAP_ENABLED
-            }
-        } else {
-            message("Skipping support for Airmap (unsupported platform)")
+    AIRMAPD_PATH    = $$PWD/libs/airmapd
+    AIRMAP_QT_PATH  = Qt.$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}
+    message('Looking for Airmap in folder "$${AIRMAPD_PATH}", variant: "$$AIRMAP_QT_PATH"')
+    MacBuild {
+        exists($${AIRMAPD_PATH}/macOS/$$AIRMAP_QT_PATH) {
+            message("Including support for AirMap for macOS")
+            LIBS += -L$${AIRMAPD_PATH}/macOS/$$AIRMAP_QT_PATH -lairmap-qt
+            DEFINES += QGC_AIRMAP_ENABLED
         }
+    } else:LinuxBuild {
+        exists($${AIRMAPD_PATH}/linux/$$AIRMAP_QT_PATH) {
+            message("Including support for AirMap for Linux")
+            LIBS += -L$${AIRMAPD_PATH}/linux/$$AIRMAP_QT_PATH -lairmap-qt
+            DEFINES += QGC_AIRMAP_ENABLED
+        }
+    } else {
+        message("Skipping support for Airmap (unsupported platform)")
     }
     contains (DEFINES, QGC_AIRMAP_ENABLED) {
         INCLUDEPATH += \

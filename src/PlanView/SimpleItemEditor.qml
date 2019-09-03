@@ -1,8 +1,7 @@
-import QtQuick                  2.3
-import QtQuick.Controls         1.2
-import QtQuick.Controls.Styles  1.4
-import QtQuick.Dialogs          1.2
-import QtQuick.Layouts          1.2
+import QtQuick                      2.11
+import QtQuick.Controls             2.4
+import QtQuick.Controls.Styles      1.4
+import QtQuick.Layouts              1.11
 
 import QGroundControl               1.0
 import QGroundControl.ScreenTools   1.0
@@ -93,6 +92,7 @@ Rectangle {
                     indexModel:         false
                     model:              object.enumStrings
                     fact:               object
+                    font.pointSize:     ScreenTools.smallFontPointSize
                     Layout.column:      1
                     Layout.row:         index
                     Layout.fillWidth:   true
@@ -138,17 +138,17 @@ Rectangle {
                         onClicked:      altHamburgerMenu.popup()
                     }
 
-                    Menu {
+                    QGCMenu {
                         id: altHamburgerMenu
 
-                        MenuItem {
+                        QGCMenuItem {
                             text:           qsTr("Altitude Relative To Home")
                             checkable:      true
                             checked:        missionItem.altitudeMode === QGroundControl.AltitudeModeRelative
                             onTriggered:    missionItem.altitudeMode = QGroundControl.AltitudeModeRelative
                         }
 
-                        MenuItem {
+                        QGCMenuItem {
                             text:           qsTr("Altitude Above Mean Sea Level")
                             checkable:      true
                             checked:        missionItem.altitudeMode === QGroundControl.AltitudeModeAbsolute
@@ -156,7 +156,7 @@ Rectangle {
                             onTriggered:    missionItem.altitudeMode = QGroundControl.AltitudeModeAbsolute
                         }
 
-                        MenuItem {
+                        QGCMenuItem {
                             text:           qsTr("Altitude Above Terrain")
                             checkable:      true
                             checked:        missionItem.altitudeMode === QGroundControl.AltitudeModeAboveTerrain
@@ -164,7 +164,7 @@ Rectangle {
                             visible:        missionItem.specifiesCoordinate
                         }
 
-                        MenuItem {
+                        QGCMenuItem {
                             text:           qsTr("Terrain Frame")
                             checkable:      true
                             checked:        missionItem.altitudeMode === QGroundControl.AltitudeModeTerrainFrame

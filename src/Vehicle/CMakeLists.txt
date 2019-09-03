@@ -9,6 +9,7 @@ endif()
 add_library(Vehicle
 	ADSBVehicle.cc
 	GPSRTKFactGroup.cc
+	VehicleObjectAvoidance.cc
 	MAVLinkLogManager.cc
 	MultiVehicleManager.cc
 	Vehicle.cc
@@ -16,8 +17,8 @@ add_library(Vehicle
 )
 
 target_link_libraries(Vehicle
-        PRIVATE
-            ui
+	PRIVATE
+		ui
 	PUBLIC
 		qgc
 )
