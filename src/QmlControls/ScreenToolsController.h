@@ -37,17 +37,20 @@ public:
     Q_PROPERTY(bool     isLinux             READ isLinux            CONSTANT)
     Q_PROPERTY(bool     isWindows           READ isWindows          CONSTANT)
     Q_PROPERTY(bool     isSerialAvailable   READ isSerialAvailable  CONSTANT)
+    Q_PROPERTY(bool     hasTouch            READ hasTouch           CONSTANT)
     Q_PROPERTY(QString  iOSDevice           READ iOSDevice          CONSTANT)
     Q_PROPERTY(QString  fixedFontFamily     READ fixedFontFamily    CONSTANT)
+    Q_PROPERTY(QString  normalFontFamily    READ normalFontFamily   CONSTANT)
+    Q_PROPERTY(QString  boldFontFamily      READ boldFontFamily     CONSTANT)
 
     // Returns current mouse position
     Q_INVOKABLE int mouseX(void) { return QCursor::pos().x(); }
     Q_INVOKABLE int mouseY(void) { return QCursor::pos().y(); }
 
 #if defined(__mobile__)
-    bool    isMobile            () { return true;  }
+    bool    isMobile            () const { return true;  }
 #else
-    bool    isMobile            () { return qgcApp()->fakeMobile(); }
+    bool    isMobile            () const { return qgcApp()->fakeMobile(); }
 #endif
 
 #if defined (Q_OS_ANDROID)
@@ -100,9 +103,12 @@ public:
     bool isDebug                () { return false; }
 #endif
 
+    bool    hasTouch() const;
+
     QString  iOSDevice          () const;
     QString  fixedFontFamily    () const;
-
+    QString  normalFontFamily   () const;
+    QString  boldFontFamily     () const;
 };
 
 #endif

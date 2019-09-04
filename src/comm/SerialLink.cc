@@ -32,7 +32,7 @@ static QStringList kSupportedBaudRates;
 
 SerialLink::SerialLink(SharedLinkConfigurationPointer& config, bool isPX4Flow)
     : LinkInterface(config, isPX4Flow)
-    , _port(NULL)
+    , _port(nullptr)
     , _bytesRead(0)
     , _stopp(false)
     , _reqReset(false)
@@ -103,7 +103,7 @@ void SerialLink::_disconnect(void)
     if (_port) {
         _port->close();
         _port->deleteLater();
-        _port = NULL;
+        _port = nullptr;
     }
 
 #ifdef __android__
@@ -161,7 +161,7 @@ bool SerialLink::_hardwareConnect(QSerialPort::SerialPortError& error, QString& 
             qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
         }
         delete _port;
-        _port = NULL;
+        _port = nullptr;
     }
 
     qCDebug(SerialLinkLog) << "SerialLink: hardwareConnect to " << _serialConfig->portName();
@@ -234,7 +234,7 @@ bool SerialLink::_hardwareConnect(QSerialPort::SerialPortError& error, QString& 
         emit communicationUpdate(getName(), tr("Error opening port: %1").arg(_port->errorString()));
         _port->close();
         delete _port;
-        _port = NULL;
+        _port = nullptr;
         return false; // couldn't open serial port
     }
 
@@ -405,7 +405,7 @@ SerialConfiguration::SerialConfiguration(SerialConfiguration* copy) : LinkConfig
 void SerialConfiguration::copyFrom(LinkConfiguration *source)
 {
     LinkConfiguration::copyFrom(source);
-    SerialConfiguration* ssource = dynamic_cast<SerialConfiguration*>(source);
+    auto* ssource = qobject_cast<SerialConfiguration*>(source);
     if (ssource) {
         _baud               = ssource->baud();
         _flowControl        = ssource->flowControl();
@@ -423,7 +423,7 @@ void SerialConfiguration::copyFrom(LinkConfiguration *source)
 void SerialConfiguration::updateSettings()
 {
     if(_link) {
-        SerialLink* serialLink = dynamic_cast<SerialLink*>(_link);
+        auto* serialLink = qobject_cast<SerialLink*>(_link);
         if(serialLink) {
             serialLink->_resetConfiguration();
         }
@@ -513,50 +513,52 @@ QStringList SerialConfiguration::supportedBaudRates()
 void SerialConfiguration::_initBaudRates()
 {
     kSupportedBaudRates.clear();
+    kSupportedBaudRates = QStringList({
 #if USE_ANCIENT_RATES
 #if defined(Q_OS_UNIX) || defined(Q_OS_LINUX) || defined(Q_OS_DARWIN)
-    kSupportedBaudRates << "50";
-    kSupportedBaudRates << "75";
+        "50",
+        "75",
 #endif
-    kSupportedBaudRates << "110";
+        "110",
 #if defined(Q_OS_UNIX) || defined(Q_OS_LINUX) || defined(Q_OS_DARWIN)
-    kSupportedBaudRates << "134";
-    kSupportedBaudRates << "150";
-    kSupportedBaudRates << "200";
+        "150",
+        "200" ,
+        "134"  ,
 #endif
-    kSupportedBaudRates << "300";
-    kSupportedBaudRates << "600";
-    kSupportedBaudRates << "1200";
+        "300",
+        "600",
+        "1200",
 #if defined(Q_OS_UNIX) || defined(Q_OS_LINUX) || defined(Q_OS_DARWIN)
-    kSupportedBaudRates << "1800";
+        "1800",
 #endif
 #endif
-    kSupportedBaudRates << "2400";
-    kSupportedBaudRates << "4800";
-    kSupportedBaudRates << "9600";
+        "2400",
+        "4800",
+        "9600",
 #if defined(Q_OS_WIN)
-    kSupportedBaudRates << "14400";
+        "14400",
 #endif
-    kSupportedBaudRates << "19200";
-    kSupportedBaudRates << "38400";
+        "19200",
+        "38400",
 #if defined(Q_OS_WIN)
-    kSupportedBaudRates << "56000";
+        "56000",
 #endif
-    kSupportedBaudRates << "57600";
-    kSupportedBaudRates << "115200";
+        "57600",
+        "115200",
 #if defined(Q_OS_WIN)
-    kSupportedBaudRates << "128000";
+        "128000",
 #endif
-    kSupportedBaudRates << "230400";
+        "230400",
 #if defined(Q_OS_WIN)
-    kSupportedBaudRates << "256000";
+        "256000",
 #endif
-    kSupportedBaudRates << "460800";
-    kSupportedBaudRates << "500000";
+        "460800",
+        "500000",
 #if defined(Q_OS_LINUX)
-    kSupportedBaudRates << "576000";
+        "576000",
 #endif
-    kSupportedBaudRates << "921600";
+        "921600",
+    });
 }
 
 void SerialConfiguration::setUsbDirect(bool usbDirect)

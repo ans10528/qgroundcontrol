@@ -19,7 +19,7 @@ class CameraCalc : public CameraSpec
     Q_OBJECT
 
 public:
-    CameraCalc(Vehicle* vehicle, const QString& settingsGroup, QObject* parent = NULL);
+    CameraCalc(Vehicle* vehicle, const QString& settingsGroup, QObject* parent = nullptr);
 
     Q_PROPERTY(QString          customCameraName            READ customCameraName                                               CONSTANT)                                   ///< Camera name for custom camera setting
     Q_PROPERTY(QString          manualCameraName            READ manualCameraName                                               CONSTANT)                                   ///< Camera name for manual camera setting
@@ -70,7 +70,7 @@ public:
     void setDistanceToSurfaceRelative   (bool distanceToSurfaceRelative);
 
     void save(QJsonObject& json) const;
-    bool load(const QJsonObject& json, QString& errorString);
+    bool load(const QJsonObject& json, bool forPresets, bool cameraSpecInPreset, QString& errorString);
 
     static const char* cameraNameName;
     static const char* valueSetIsDistanceName;

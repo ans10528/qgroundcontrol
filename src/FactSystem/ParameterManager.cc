@@ -35,7 +35,7 @@ const char* ParameterManager::_jsonParamValueKey =          "value";
 ParameterManager::ParameterManager(Vehicle* vehicle)
     : QObject                           (vehicle)
     , _vehicle                          (vehicle)
-    , _mavlink                          (NULL)
+    , _mavlink                          (nullptr)
     , _loadProgress                     (0.0)
     , _parametersReady                  (false)
     , _missingParameters                (false)
@@ -45,7 +45,7 @@ ParameterManager::ParameterManager(Vehicle* vehicle)
     , _metaDataAddedToFacts             (false)
     , _logReplay                        (vehicle->priorityLink() && vehicle->priorityLink()->isLogReplay())
     , _parameterSetMajorVersion         (-1)
-    , _parameterMetaData                (NULL)
+    , _parameterMetaData                (nullptr)
     , _prevWaitingReadParamIndexCount   (0)
     , _prevWaitingReadParamNameCount    (0)
     , _prevWaitingWriteParamNameCount   (0)
@@ -330,7 +330,7 @@ void ParameterManager::_parameterUpdate(int vehicleId, int componentId, QString 
 
     _dataMutex.unlock();
 
-    Fact* fact = NULL;
+    Fact* fact = nullptr;
     if (_mapParameterName2Variant[componentId].contains(parameterName)) {
         fact = _mapParameterName2Variant[componentId][parameterName].value<Fact*>();
     }
@@ -1052,7 +1052,7 @@ void ParameterManager::_clearMetaData(void)
 {
     if (_parameterMetaData) {
         _parameterMetaData->deleteLater();
-        _parameterMetaData = NULL;
+        _parameterMetaData = nullptr;
     }
 }
 
@@ -1109,8 +1109,8 @@ void ParameterManager::_checkInitialLoadComplete(void)
     // We aren't waiting for any more initial parameter updates, initial parameter loading is complete
     _initialLoadComplete = true;
 
-	// Parameter cache crc failure debugging
-	for (int componentId: _debugCacheParamSeen.keys()) {
+    // Parameter cache crc failure debugging
+    for (int componentId: _debugCacheParamSeen.keys()) {
         if (!_logReplay && _debugCacheCRC.contains(componentId) && _debugCacheCRC[componentId]) {
             for (const QString& paramName: _debugCacheParamSeen[componentId].keys()) {
                 if (!_debugCacheParamSeen[componentId][paramName]) {
@@ -1177,7 +1177,7 @@ void ParameterManager::_initialRequestTimeout(void)
 QString ParameterManager::parameterMetaDataFile(Vehicle* vehicle, MAV_AUTOPILOT firmwareType, int wantedMajorVersion, int& majorVersion, int& minorVersion)
 {
     bool            cacheHit = false;
-    FirmwarePlugin* plugin = qgcApp()->toolbox()->firmwarePluginManager()->firmwarePluginForAutopilot(firmwareType, MAV_TYPE_QUADROTOR);
+    FirmwarePlugin* plugin = _anyVehicleTypeFirmwarePlugin(firmwareType);
 
     // Cached files are stored in settings location
     QSettings settings;
@@ -1270,9 +1270,17 @@ QString ParameterManager::parameterMetaDataFile(Vehicle* vehicle, MAV_AUTOPILOT 
     return metaDataFile;
 }
 
+FirmwarePlugin* ParameterManager::_anyVehicleTypeFirmwarePlugin(MAV_AUTOPILOT firmwareType)
+{
+    // There are cases where we need a FirmwarePlugin but we don't have a vehicle. In those specified case the plugin for any of the supported vehicle types will do.
+    MAV_TYPE anySupportedVehicleType = qgcApp()->toolbox()->firmwarePluginManager()->supportedVehicleTypes(firmwareType)[0];
+
+    return qgcApp()->toolbox()->firmwarePluginManager()->firmwarePluginForAutopilot(firmwareType, anySupportedVehicleType);
+}
+
 void ParameterManager::cacheMetaDataFile(const QString& metaDataFile, MAV_AUTOPILOT firmwareType)
 {
-    FirmwarePlugin* plugin = qgcApp()->toolbox()->firmwarePluginManager()->firmwarePluginForAutopilot(firmwareType, MAV_TYPE_QUADROTOR);
+    FirmwarePlugin* plugin = _anyVehicleTypeFirmwarePlugin(firmwareType);
 
     int newMajorVersion, newMinorVersion;
     plugin->getParameterMetaDataVersionInfo(metaDataFile, newMajorVersion, newMinorVersion);
@@ -1280,7 +1288,7 @@ void ParameterManager::cacheMetaDataFile(const QString& metaDataFile, MAV_AUTOPI
 
     // Find the cache hit closest to this new file
     int cacheMajorVersion, cacheMinorVersion;
-    QString cacheHit = ParameterManager::parameterMetaDataFile(NULL, firmwareType, newMajorVersion, cacheMajorVersion, cacheMinorVersion);
+    QString cacheHit = ParameterManager::parameterMetaDataFile(nullptr, firmwareType, newMajorVersion, cacheMajorVersion, cacheMinorVersion);
     qCDebug(ParameterManagerLog) << "ParameterManager::cacheMetaDataFile cacheHit file:firmware:major;minor" << cacheHit << cacheMajorVersion << cacheMinorVersion;
 
     bool cacheNewFile = false;
@@ -1363,7 +1371,7 @@ QString ParameterManager::_remapParamNameToVersion(const QString& paramName)
 
 /// The offline editing vehicle can have custom loaded params bolted into it.
 void ParameterManager::_loadOfflineEditingParams(void)
-{    
+{
     QString paramFilename = _vehicle->firmwarePlugin()->offlineEditingParamFile(_vehicle);
     if (paramFilename.isEmpty()) {
         return;
@@ -1542,13 +1550,22 @@ bool ParameterManager::loadFromJson(const QJsonObject& json, bool required, QStr
     return true;
 }
 
-void ParameterManager::resetAllParametersToDefaults(void)
+void ParameterManager::resetAllParametersToDefaults()
 {
     _vehicle->sendMavCommand(MAV_COMP_ID_ALL,
                              MAV_CMD_PREFLIGHT_STORAGE,
                              true,  // showError
                              2,     // Reset params to default
                              -1);   // Don't do anything with mission storage
+}
+
+void ParameterManager::resetAllToVehicleConfiguration()
+{
+    //-- https://github.com/PX4/Firmware/pull/11760
+    Fact* sysAutoConfigFact = getParameter(-1, "SYS_AUTOCONFIG");
+    if(sysAutoConfigFact) {
+        sysAutoConfigFact->setRawValue(2);
+    }
 }
 
 QString ParameterManager::_logVehiclePrefix(int componentId)
@@ -1563,7 +1580,7 @@ QString ParameterManager::_logVehiclePrefix(int componentId)
 void ParameterManager::_setLoadProgress(double loadProgress)
 {
     _loadProgress = loadProgress;
-    emit loadProgressChanged(loadProgress);
+    emit loadProgressChanged(static_cast<float>(loadProgress));
 }
 
 QList<int> ParameterManager::componentIds(void)

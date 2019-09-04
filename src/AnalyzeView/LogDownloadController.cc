@@ -11,10 +11,6 @@
 #include "LogDownloadController.h"
 #include "MultiVehicleManager.h"
 #include "QGCMAVLink.h"
-#if !defined(__mobile__)
-#include "QGCQFileDialog.h"
-#include "MainWindow.h"
-#endif
 #include "UAS.h"
 #include "QGCApplication.h"
 #include "QGCToolbox.h"
@@ -108,9 +104,9 @@ QGCLogEntry::sizeStr() const
 
 //----------------------------------------------------------------------------------------
 LogDownloadController::LogDownloadController(void)
-    : _uas(NULL)
-    , _downloadData(NULL)
-    , _vehicle(NULL)
+    : _uas(nullptr)
+    , _downloadData(nullptr)
+    , _vehicle(nullptr)
     , _requestingLogEntries(false)
     , _downloadingLogs(false)
     , _retries(0)
@@ -141,7 +137,7 @@ LogDownloadController::_setActiveVehicle(Vehicle* vehicle)
         _logEntriesModel.clear();
         disconnect(_uas, &UASInterface::logEntry, this, &LogDownloadController::_logEntry);
         disconnect(_uas, &UASInterface::logData,  this, &LogDownloadController::_logData);
-        _uas = NULL;
+        _uas = nullptr;
     }
     _vehicle = vehicle;
     if(_vehicle) {
@@ -181,7 +177,7 @@ LogDownloadController::_logEntry(UASInterface* uas, uint32_t time_utc, uint32_t 
                 entry->setSize(size);
                 entry->setTime(QDateTime::fromTime_t(time_utc));
                 entry->setReceived(true);
-                entry->setStatus(QString(tr("Available")));
+                entry->setStatus(tr("Available"));
             } else {
                 qWarning() << "Received log entry for out-of-bound index:" << id;
             }
@@ -228,7 +224,7 @@ LogDownloadController::_resetSelection(bool canceled)
         if(entry) {
             if(entry->selected()) {
                 if(canceled) {
-                    entry->setStatus(QString(tr("Canceled")));
+                    entry->setStatus(tr("Canceled"));
                 }
                 entry->setSelected(false);
             }
@@ -275,7 +271,7 @@ LogDownloadController::_findMissingEntries()
             for(int i = 0; i < num_logs; i++) {
                 QGCLogEntry* entry = _logEntriesModel[i];
                 if(entry && !entry->received()) {
-                    entry->setStatus(QString(tr("Error")));
+                    entry->setStatus(tr("Error"));
                 }
             }
             //-- Give up
@@ -361,7 +357,7 @@ LogDownloadController::_logData(UASInterface* uas, uint32_t ofs, uint16_t id, ui
             _timer.start(timeout_time);
             //-- Do we have it all?
             if(_logComplete()) {
-                _downloadData->entry->setStatus(QString(tr("Downloaded")));
+                _downloadData->entry->setStatus(tr("Downloaded"));
                 //-- Check for more
                 _receivedAllData();
             } else if (_chunkComplete()) {
@@ -380,7 +376,7 @@ LogDownloadController::_logData(UASInterface* uas, uint32_t ofs, uint16_t id, ui
         qWarning() << "Received log offset greater than expected";
     }
     if(!result) {
-        _downloadData->entry->setStatus(QString(tr("Error")));
+        _downloadData->entry->setStatus(tr("Error"));
     }
 }
 
@@ -427,7 +423,7 @@ LogDownloadController::_findMissingData()
     }
 
     if(_retries++ > 2) {
-        _downloadData->entry->setStatus(QString(tr("Timed Out")));
+        _downloadData->entry->setStatus(tr("Timed Out"));
         //-- Give up
         qWarning() << "Too many errors retreiving log data. Giving up.";
         _receivedAllData();
@@ -516,11 +512,11 @@ LogDownloadController::download(QString path)
     }
 #else
     if(dir.isEmpty()) {
-        dir = QGCQFileDialog::getExistingDirectory(
-                MainWindow::instance(),
-                tr("Log Download Directory"),
-                QDir::homePath(),
-                QGCQFileDialog::ShowDirsOnly | QGCQFileDialog::DontResolveSymlinks);
+        dir = QString(); //-- TODO: QGCQFileDialog::getExistingDirectory(
+        //        MainWindow::instance(),
+        //        tr("Log Download Directory"),
+        //        QDir::homePath(),
+        //        QGCQFileDialog::ShowDirsOnly | QGCQFileDialog::DontResolveSymlinks);
     }
 #endif
     downloadToDirectory(dir);
@@ -545,7 +541,7 @@ void LogDownloadController::downloadToDirectory(const QString& dir)
             QGCLogEntry* entry = _logEntriesModel[i];
             if(entry) {
                 if(entry->selected()) {
-                   entry->setStatus(QString(tr("Waiting")));
+                   entry->setStatus(tr("Waiting"));
                 }
             }
         }
@@ -570,7 +566,7 @@ LogDownloadController::_getNextSelected()
             }
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 //----------------------------------------------------------------------------------------
@@ -579,7 +575,7 @@ LogDownloadController::_prepareLogDownload()
 {
     if(_downloadData) {
         delete _downloadData;
-        _downloadData = NULL;
+        _downloadData = nullptr;
     }
     QGCLogEntry* entry = _getNextSelected();
     if(!entry) {
@@ -636,9 +632,9 @@ LogDownloadController::_prepareLogDownload()
         if (_downloadData->file.exists()) {
             _downloadData->file.remove();
         }
-        _downloadData->entry->setStatus(QString(tr("Error")));
+        _downloadData->entry->setStatus(tr("Error"));
         delete _downloadData;
-        _downloadData = NULL;
+        _downloadData = nullptr;
     }
     return result;
 }
@@ -690,7 +686,7 @@ LogDownloadController::cancel(void)
         _receivedAllEntries();
     }
     if(_downloadData) {
-        _downloadData->entry->setStatus(QString(tr("Canceled")));
+        _downloadData->entry->setStatus(tr("Canceled"));
         if (_downloadData->file.exists()) {
             _downloadData->file.remove();
         }
@@ -713,7 +709,7 @@ QGCLogEntry*
 QGCLogModel::get(int index)
 {
     if (index < 0 || index >= _logEntries.count()) {
-        return NULL;
+        return nullptr;
     }
     return _logEntries[index];
 }

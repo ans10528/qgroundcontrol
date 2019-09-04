@@ -62,7 +62,7 @@ void CorridorScanComplexItem::save(QJsonArray&  planItems)
 {
     QJsonObject saveObject;
 
-    _save(saveObject);
+    TransectStyleComplexItem::_save(saveObject);
 
     saveObject[JsonHelper::jsonVersionKey] =                    2;
     saveObject[VisualMissionItem::jsonTypeKey] =                VisualMissionItem::jsonTypeComplexItemValue;
@@ -115,7 +115,7 @@ bool CorridorScanComplexItem::load(const QJsonObject& complexObject, int sequenc
 
     setSequenceNumber(sequenceNumber);
 
-    if (!_load(complexObject, errorString)) {
+    if (!_load(complexObject, false /* forPresets */, errorString)) {
         _ignoreRecalc = false;
         return false;
     }
@@ -335,7 +335,7 @@ void CorridorScanComplexItem::_rebuildTransectsPhase1(void)
     if (_loadedMissionItemsParent) {
         _loadedMissionItems.clear();
         _loadedMissionItemsParent->deleteLater();
-        _loadedMissionItemsParent = NULL;
+        _loadedMissionItemsParent = nullptr;
     }
 
     _transects.clear();

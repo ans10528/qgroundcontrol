@@ -20,9 +20,7 @@
 #endif
 #include "UDPLink.h"
 #include "TCPLink.h"
-#if !defined(__mobile__)
 #include "LogReplayLink.h"
-#endif
 #ifdef QGC_ENABLE_BLUETOOTH
 #include "BluetoothLink.h"
 #endif
@@ -57,7 +55,7 @@ LinkConfiguration::LinkConfiguration(LinkConfiguration* copy)
 
 void LinkConfiguration::copyFrom(LinkConfiguration* source)
 {
-    Q_ASSERT(source != NULL);
+    Q_ASSERT(source != nullptr);
     _link       = source->link();
     _name       = source->name();
     _dynamic    = source->isDynamic();
@@ -98,11 +96,9 @@ LinkConfiguration* LinkConfiguration::createSettings(int type, const QString& na
         config = new BluetoothConfiguration(name);
         break;
 #endif
-#ifndef __mobile__
         case LinkConfiguration::TypeLogReplay:
             config = new LogReplayLinkConfiguration(name);
             break;
-#endif
 #ifdef QT_DEBUG
         case LinkConfiguration::TypeMock:
             config = new MockConfiguration(name);
@@ -122,28 +118,26 @@ LinkConfiguration* LinkConfiguration::duplicateSettings(LinkConfiguration* sourc
     switch(source->type()) {
 #ifndef NO_SERIAL_LINK
         case TypeSerial:
-            dupe = new SerialConfiguration(dynamic_cast<SerialConfiguration*>(source));
+            dupe = new SerialConfiguration(qobject_cast<SerialConfiguration*>(source));
             break;
 #endif
         case TypeUdp:
-            dupe = new UDPConfiguration(dynamic_cast<UDPConfiguration*>(source));
+            dupe = new UDPConfiguration(qobject_cast<UDPConfiguration*>(source));
             break;
         case TypeTcp:
-            dupe = new TCPConfiguration(dynamic_cast<TCPConfiguration*>(source));
+            dupe = new TCPConfiguration(qobject_cast<TCPConfiguration*>(source));
             break;
 #ifdef QGC_ENABLE_BLUETOOTH
         case TypeBluetooth:
-            dupe = new BluetoothConfiguration(dynamic_cast<BluetoothConfiguration*>(source));
+            dupe = new BluetoothConfiguration(qobject_cast<BluetoothConfiguration*>(source));
             break;
 #endif
-#ifndef __mobile__
         case TypeLogReplay:
-            dupe = new LogReplayLinkConfiguration(dynamic_cast<LogReplayLinkConfiguration*>(source));
+            dupe = new LogReplayLinkConfiguration(qobject_cast<LogReplayLinkConfiguration*>(source));
             break;
-#endif
 #ifdef QT_DEBUG
         case TypeMock:
-            dupe = new MockConfiguration(dynamic_cast<MockConfiguration*>(source));
+            dupe = new MockConfiguration(qobject_cast<MockConfiguration*>(source));
             break;
 #endif
         case TypeLast:

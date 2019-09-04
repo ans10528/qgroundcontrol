@@ -26,8 +26,8 @@ class FactGroup : public QObject
     Q_OBJECT
     
 public:
-    FactGroup(int updateRateMsecs, const QString& metaDataFile, QObject* parent = NULL);
-    FactGroup(int updateRateMsecs, QObject* parent = NULL);
+    FactGroup(int updateRateMsecs, const QString& metaDataFile, QObject* parent = nullptr);
+    FactGroup(int updateRateMsecs, QObject* parent = nullptr);
 
     Q_PROPERTY(QStringList factNames        READ factNames      CONSTANT)
     Q_PROPERTY(QStringList factGroupNames   READ factGroupNames CONSTANT)
@@ -37,6 +37,9 @@ public:
 
     /// @return FactGroup for specified name, NULL if not found
     Q_INVOKABLE FactGroup* getFactGroup(const QString& name);
+
+    /// Turning on live updates will allow value changes to flow through as they are received.
+    Q_INVOKABLE void setLiveUpdates(bool liveUpdates);
 
     QStringList factNames(void) const { return _factNames; }
     QStringList factGroupNames(void) const { return _nameToFactGroupMap.keys(); }

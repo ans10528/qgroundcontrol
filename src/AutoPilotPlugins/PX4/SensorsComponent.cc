@@ -13,7 +13,6 @@
 
 #include "SensorsComponent.h"
 #include "PX4AutoPilotPlugin.h"
-#include "QGCQmlWidgetHolder.h"
 #include "SensorsComponentController.h"
 
 const char* SensorsComponent::_airspeedBreakerParam =   "CBRK_AIRSPD_CHK";
@@ -27,7 +26,7 @@ SensorsComponent::SensorsComponent(Vehicle* vehicle, AutoPilotPlugin* autopilot,
     VehicleComponent(vehicle, autopilot, parent),
     _name(tr("Sensors"))
 {
-    _deviceIds << QStringLiteral("CAL_GYRO0_ID") << QStringLiteral("CAL_ACC0_ID");
+    _deviceIds = QStringList({QStringLiteral("CAL_GYRO0_ID"), QStringLiteral("CAL_ACC0_ID") });
 }
 
 QString SensorsComponent::name(void) const

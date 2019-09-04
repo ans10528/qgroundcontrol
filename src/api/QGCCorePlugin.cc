@@ -15,12 +15,10 @@
 #include "SettingsManager.h"
 #include "AppMessages.h"
 #include "QmlObjectListModel.h"
+#include "VideoManager.h"
 #include "VideoReceiver.h"
 #include "QGCLoggingCategory.h"
-
-#if !defined(__mobile__)
-#include "QGCQmlWidgetHolder.h"
-#endif
+#include "QGCCameraManager.h"
 
 #include <QtQml>
 #include <QQmlEngine>
@@ -48,6 +46,10 @@ public:
         if(pTaisync)
             delete pTaisync;
 #endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+        if(pMicrohard)
+            delete pMicrohard;
+#endif
 #if defined(QGC_AIRMAP_ENABLED)
         if(pAirmap)
             delete pAirmap;
@@ -61,6 +63,8 @@ public:
             delete pMockLink;
         if(pDebug)
             delete pDebug;
+        if(pQmlTest)
+            delete pQmlTest;
 #endif
         if(defaultOptions)
             delete defaultOptions;
@@ -72,6 +76,9 @@ public:
 #if defined(QGC_GST_TAISYNC_ENABLED)
     QmlComponentInfo* pTaisync                  = nullptr;
 #endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+    QmlComponentInfo* pMicrohard                = nullptr;
+#endif
 #if defined(QGC_AIRMAP_ENABLED)
     QmlComponentInfo* pAirmap                   = nullptr;
 #endif
@@ -81,6 +88,7 @@ public:
 #if defined(QT_DEBUG)
     QmlComponentInfo* pMockLink                 = nullptr;
     QmlComponentInfo* pDebug                    = nullptr;
+    QmlComponentInfo* pQmlTest                  = nullptr;
 #endif
 
     QmlComponentInfo*   valuesPageWidgetInfo    = nullptr;
@@ -117,6 +125,86 @@ void QGCCorePlugin::setToolbox(QGCToolbox *toolbox)
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     qmlRegisterUncreatableType<QGCCorePlugin>("QGroundControl.QGCCorePlugin", 1, 0, "QGCCorePlugin", "Reference only");
     qmlRegisterUncreatableType<QGCOptions>("QGroundControl.QGCOptions",       1, 0, "QGCOptions",    "Reference only");
+    //-- Handle Camera and Video Changes
+    connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &QGCCorePlugin::_activeVehicleChanged);
+}
+
+void QGCCorePlugin::_activeVehicleChanged(Vehicle* activeVehicle)
+{
+    if(activeVehicle != _activeVehicle) {
+        if(_activeVehicle) {
+            disconnect(_activeVehicle, &Vehicle::dynamicCamerasChanged, this, &QGCCorePlugin::_dynamicCamerasChanged);
+        }
+        if(_dynamicCameras) {
+            disconnect(_dynamicCameras, &QGCCameraManager::currentCameraChanged, this, &QGCCorePlugin::_currentCameraChanged);
+            _dynamicCameras = nullptr;
+        }
+        _activeVehicle = activeVehicle;
+        if(_activeVehicle) {
+            connect(_activeVehicle, &Vehicle::dynamicCamerasChanged, this, &QGCCorePlugin::_dynamicCamerasChanged);
+        }
+    }
+}
+
+void QGCCorePlugin::_dynamicCamerasChanged()
+{
+    if(_currentCamera) {
+        disconnect(_currentCamera, &QGCCameraControl::autoStreamChanged, this, &QGCCorePlugin::_autoStreamChanged);
+        _currentCamera = nullptr;
+    }
+    if(_activeVehicle) {
+        _dynamicCameras = _activeVehicle->dynamicCameras();
+        if(_dynamicCameras) {
+            connect(_dynamicCameras, &QGCCameraManager::currentCameraChanged, this, &QGCCorePlugin::_currentCameraChanged);
+        }
+    }
+}
+
+void QGCCorePlugin::_currentCameraChanged()
+{
+    if(_dynamicCameras) {
+        QGCCameraControl* cp = _dynamicCameras->currentCameraInstance();
+        if(_currentCamera) {
+            disconnect(_currentCamera, &QGCCameraControl::autoStreamChanged, this, &QGCCorePlugin::_autoStreamChanged);
+        }
+        if(_currentCamera != cp) {
+            _currentCamera = cp;
+            connect(_currentCamera, &QGCCameraControl::autoStreamChanged, this, &QGCCorePlugin::_autoStreamChanged);
+        }
+    }
+}
+
+void QGCCorePlugin::_autoStreamChanged()
+{
+    _resetInstrumentPages();
+    emit instrumentPagesChanged();
+}
+
+void QGCCorePlugin::_resetInstrumentPages()
+{
+    if (_p->valuesPageWidgetInfo) {
+        _p->valuesPageWidgetInfo->deleteLater();
+        _p->valuesPageWidgetInfo = nullptr;
+    }
+    if(_p->cameraPageWidgetInfo) {
+        _p->cameraPageWidgetInfo->deleteLater();
+        _p->cameraPageWidgetInfo = nullptr;
+    }
+#if defined(QGC_GST_STREAMING)
+    if(_p->videoPageWidgetInfo) {
+        _p->videoPageWidgetInfo->deleteLater();
+        _p->videoPageWidgetInfo = nullptr;
+    }
+#endif
+    if(_p->healthPageWidgetInfo) {
+        _p->healthPageWidgetInfo->deleteLater();
+        _p->healthPageWidgetInfo = nullptr;
+    }
+    if(_p->vibrationPageWidgetInfo) {
+        _p->vibrationPageWidgetInfo->deleteLater();
+        _p->vibrationPageWidgetInfo = nullptr;
+    }
+    _p->instrumentPageWidgetList.clear();
 }
 
 QVariantList &QGCCorePlugin::settingsPages()
@@ -139,6 +227,12 @@ QVariantList &QGCCorePlugin::settingsPages()
             QUrl::fromUserInput("qrc:/qml/TaisyncSettings.qml"),
             QUrl::fromUserInput(""));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pTaisync)));
+#endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+        _p->pMicrohard = new QmlComponentInfo(tr("Microhard"),
+            QUrl::fromUserInput("qrc:/qml/MicrohardSettings.qml"),
+            QUrl::fromUserInput(""));
+        _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pMicrohard)));
 #endif
 #if defined(QGC_AIRMAP_ENABLED)
         _p->pAirmap = new QmlComponentInfo(tr("AirMap"),
@@ -164,18 +258,24 @@ QVariantList &QGCCorePlugin::settingsPages()
         _p->pDebug = new QmlComponentInfo(tr("Debug"),
             QUrl::fromUserInput("qrc:/qml/DebugWindow.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pDebug)));
+        _p->pQmlTest = new QmlComponentInfo(tr("Palette Test"),
+            QUrl::fromUserInput("qrc:/qml/QmlTest.qml"));
+        _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pQmlTest)));
 #endif
     }
     return _p->settingsList;
 }
 
-QVariantList& QGCCorePlugin::instrumentPages(void)
+QVariantList& QGCCorePlugin::instrumentPages()
 {
     if (!_p->valuesPageWidgetInfo) {
         _p->valuesPageWidgetInfo    = new QmlComponentInfo(tr("Values"),    QUrl::fromUserInput("qrc:/qml/ValuePageWidget.qml"));
         _p->cameraPageWidgetInfo    = new QmlComponentInfo(tr("Camera"),    QUrl::fromUserInput("qrc:/qml/CameraPageWidget.qml"));
 #if defined(QGC_GST_STREAMING)
-        _p->videoPageWidgetInfo     = new QmlComponentInfo(tr("Video Stream"), QUrl::fromUserInput("qrc:/qml/VideoPageWidget.qml"));
+        if(!_currentCamera || !_currentCamera->autoStream()) {
+            //-- Video Page Widget only available if using manual video streaming
+            _p->videoPageWidgetInfo = new QmlComponentInfo(tr("Video Stream"), QUrl::fromUserInput("qrc:/qml/VideoPageWidget.qml"));
+        }
 #endif
         _p->healthPageWidgetInfo    = new QmlComponentInfo(tr("Health"),    QUrl::fromUserInput("qrc:/qml/HealthPageWidget.qml"));
         _p->vibrationPageWidgetInfo = new QmlComponentInfo(tr("Vibration"), QUrl::fromUserInput("qrc:/qml/VibrationPageWidget.qml"));
@@ -216,6 +316,14 @@ bool QGCCorePlugin::adjustSettingMetaData(const QString& settingsGroup, FactMeta
 {
     if (settingsGroup != AppSettings::settingsGroup) {
         // All changes refer to AppSettings
+#if !defined(QGC_ENABLE_PAIRING)
+        //-- If we don't support pairing, disable it.
+        if (metaData.name() == AppSettings::usePairingName) {
+            metaData.setRawDefaultValue(false);
+            //-- And hide the option
+            return false;
+        }
+#endif
         return true;
     }
 
@@ -271,7 +379,7 @@ void QGCCorePlugin::paletteOverride(QString colorName, QGCPalette::PaletteColorI
     Q_UNUSED(colorInfo);
 }
 
-QString QGCCorePlugin::showAdvancedUIMessage(void) const
+QString QGCCorePlugin::showAdvancedUIMessage() const
 {
     return tr("WARNING: You are about to enter Advanced Mode. "
               "If used incorrectly, this may cause your vehicle to malfunction thus voiding your warranty. "
@@ -291,7 +399,7 @@ QQmlApplicationEngine* QGCCorePlugin::createRootWindow(QObject *parent)
     pEngine->addImportPath("qrc:/qml");
     pEngine->rootContext()->setContextProperty("joystickManager", qgcApp()->toolbox()->joystickManager());
     pEngine->rootContext()->setContextProperty("debugMessageModel", AppMessages::getModel());
-    pEngine->load(QUrl(QStringLiteral("qrc:/qml/MainWindowNative.qml")));
+    pEngine->load(QUrl(QStringLiteral("qrc:/qml/MainRootWindow.qml")));
     return pEngine;
 }
 
@@ -304,9 +412,14 @@ bool QGCCorePlugin::mavlinkMessage(Vehicle* vehicle, LinkInterface* link, mavlin
     return true;
 }
 
-QmlObjectListModel* QGCCorePlugin::customMapItems(void)
+QmlObjectListModel* QGCCorePlugin::customMapItems()
 {
     return &_p->_emptyCustomMapItems;
+}
+
+VideoManager* QGCCorePlugin::createVideoManager(QGCApplication *app, QGCToolbox *toolbox)
+{
+    return new VideoManager(app, toolbox);
 }
 
 VideoReceiver* QGCCorePlugin::createVideoReceiver(QObject* parent)
@@ -314,12 +427,12 @@ VideoReceiver* QGCCorePlugin::createVideoReceiver(QObject* parent)
     return new VideoReceiver(parent);
 }
 
-bool QGCCorePlugin::guidedActionsControllerLogging(void) const
+bool QGCCorePlugin::guidedActionsControllerLogging() const
 {
     return GuidedActionsControllerLog().isDebugEnabled();
 }
 
-QString QGCCorePlugin::stableVersionCheckFileUrl(void) const
+QString QGCCorePlugin::stableVersionCheckFileUrl() const
 {
 #ifdef QGC_CUSTOM_BUILD
     // Custom builds must override to turn on and provide their own location
@@ -328,17 +441,3 @@ QString QGCCorePlugin::stableVersionCheckFileUrl(void) const
     return QString("https://s3-us-west-2.amazonaws.com/qgroundcontrol/latest/QGC.version.txt");
 #endif
 }
-
-#if !defined(__mobile__)
-QGCQmlWidgetHolder* QGCCorePlugin::createMainQmlWidgetHolder(QLayout *mainLayout, QWidget* parent)
-{
-    QGCQmlWidgetHolder* pMainQmlWidgetHolder = new QGCQmlWidgetHolder(QString(), nullptr, parent);
-    mainLayout->addWidget(pMainQmlWidgetHolder);
-    pMainQmlWidgetHolder->setVisible(true);
-    QQmlEngine::setObjectOwnership(parent, QQmlEngine::CppOwnership);
-    pMainQmlWidgetHolder->setContextPropertyObject("controller", parent);
-    pMainQmlWidgetHolder->setContextPropertyObject("debugMessageModel", AppMessages::getModel());
-    pMainQmlWidgetHolder->setSource(QUrl::fromUserInput("qrc:qml/MainWindowHybrid.qml"));
-    return pMainQmlWidgetHolder;
-}
-#endif

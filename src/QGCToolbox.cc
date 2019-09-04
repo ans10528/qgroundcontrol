@@ -30,6 +30,9 @@
 #include "QGCOptions.h"
 #include "SettingsManager.h"
 #include "QGCApplication.h"
+#if defined(QGC_ENABLE_PAIRING)
+#include "PairingManager.h"
+#endif
 #if defined(QGC_AIRMAP_ENABLED)
 #include "AirMapManager.h"
 #else
@@ -37,6 +40,9 @@
 #endif
 #if defined(QGC_GST_TAISYNC_ENABLED)
 #include "TaisyncManager.h"
+#endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+#include "MicrohardManager.h"
 #endif
 
 #if defined(QGC_CUSTOM_BUILD)
@@ -67,6 +73,9 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     _followMe               = new FollowMe                  (app, this);
     _videoManager           = new VideoManager              (app, this);
     _mavlinkLogManager      = new MAVLinkLogManager         (app, this);
+#if defined(QGC_ENABLE_PAIRING)
+    _pairingManager         = new PairingManager            (app, this);
+#endif
     //-- Airmap Manager
     //-- This should be "pluggable" so an arbitrary AirSpace manager can be used
     //-- For now, we instantiate the one and only AirMap provider
@@ -77,6 +86,9 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
 #endif
 #if defined(QGC_GST_TAISYNC_ENABLED)
     _taisyncManager         = new TaisyncManager            (app, this);
+#endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+    _microhardManager       = new MicrohardManager          (app, this);
 #endif
 }
 
@@ -106,6 +118,12 @@ void QGCToolbox::setChildToolboxes(void)
     _airspaceManager->setToolbox(this);
 #if defined(QGC_GST_TAISYNC_ENABLED)
     _taisyncManager->setToolbox(this);
+#endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+    _microhardManager->setToolbox(this);
+#endif
+#if defined(QGC_ENABLE_PAIRING)
+    _pairingManager->setToolbox(this);
 #endif
 }
 

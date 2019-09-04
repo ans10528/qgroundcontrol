@@ -26,7 +26,7 @@ class PlanMasterController : public QObject
     Q_OBJECT
     
 public:
-    PlanMasterController(QObject* parent = NULL);
+    PlanMasterController(QObject* parent = nullptr);
     ~PlanMasterController();
     
     Q_PROPERTY(MissionController*       missionController       READ missionController      CONSTANT)
@@ -111,6 +111,9 @@ private slots:
     void _sendMissionComplete(void);
     void _sendGeoFenceComplete(void);
     void _sendRallyPointsComplete(void);
+#if defined(QGC_AIRMAP_ENABLED)
+    void _startFlightPlanning(void);
+#endif
 
 private:
     void _showPlanFromManagerVehicle(void);

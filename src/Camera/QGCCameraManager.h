@@ -43,6 +43,8 @@ public:
     virtual void                setCurrentCamera    (int sel);
     //-- Current stream
     virtual QGCVideoStreamInfo* currentStreamInstance();
+    //-- Current thermal stream
+    virtual QGCVideoStreamInfo* thermalStreamInstance();
 
 signals:
     void    camerasChanged          ();
@@ -55,9 +57,15 @@ protected slots:
     virtual void    _mavlinkMessageReceived (const mavlink_message_t& message);
     virtual void    _activeJoystickChanged  (Joystick* joystick);
     virtual void    _stepZoom               (int direction);
+    virtual void    _startZoom              (int direction);
+    virtual void    _stopZoom               ();
     virtual void    _stepCamera             (int direction);
     virtual void    _stepStream             (int direction);
     virtual void    _cameraTimeout          ();
+    virtual void    _triggerCamera          ();
+    virtual void    _startVideoRecording    ();
+    virtual void    _stopVideoRecording     ();
+    virtual void    _toggleVideoRecording   ();
 
 protected:
     virtual QGCCameraControl* _findCamera   (int id);
