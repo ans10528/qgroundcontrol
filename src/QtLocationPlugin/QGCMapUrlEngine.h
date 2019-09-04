@@ -39,6 +39,12 @@ public:
         GoogleTerrain           = 16,
         GoogleHybrid            = 20,
 
+        GoogleChinaMap               = 11,
+        GoogleChinaSatellite         = 14,
+        GoogleChinaLabels            = 18,
+        GoogleChinaTerrain           = 116,
+        GoogleChinaHybrid            = 120,
+
         OpenStreetMap           = 32,
         OpenStreetOsm           = 33,
         OpenStreetMapSurfer     = 34,
