@@ -110,10 +110,10 @@ QGeoTiledMappingManagerEngineQGC::QGeoTiledMappingManagerEngineQGC(const QVarian
         QGCGEOMAPTYPE(QGeoMapType::TerrainMap,        "Google Terrain Map",       "Google terrain map",           false,  false,  UrlFactory::GoogleTerrain),
         QGCGEOMAPTYPE(QGeoMapType::HybridMap,         "Google Hybrid Map",        "Google hybrid map",            false,  false,  UrlFactory::GoogleHybrid),
 #endif
-    mapTypes << QGCGEOMAPTYPE(QGeoMapType::StreetMap,         "GoogleChina Street Map",        "GoogleChina street map",            false,  false,  UrlFactory::GoogleChinaMap);
-    mapTypes << QGCGEOMAPTYPE(QGeoMapType::SatelliteMapDay,   "GoogleChina Satellite Map",     "GoogleChina satellite map",         false,  false,  UrlFactory::GoogleChinaSatellite);
-    mapTypes << QGCGEOMAPTYPE(QGeoMapType::TerrainMap,        "GoogleChina Terrain Map",       "GoogleChina terrain map",           false,  false,  UrlFactory::GoogleChinaTerrain);
-    mapTypes << QGCGEOMAPTYPE(QGeoMapType::HybridMap,         "GoogleChina Hybrid Map",        "GoogleChina street map",            false,  false,  UrlFactory::GoogleChinaHybrid);
+    QGCGEOMAPTYPE(QGeoMapType::StreetMap,         "GoogleChina Street Map",        "GoogleChina street map",            false,  false,  UrlFactory::GoogleChinaMap),
+    QGCGEOMAPTYPE(QGeoMapType::SatelliteMapDay,   "GoogleChina Satellite Map",     "GoogleChina satellite map",         false,  false,  UrlFactory::GoogleChinaSatellite),
+    QGCGEOMAPTYPE(QGeoMapType::TerrainMap,        "GoogleChina Terrain Map",       "GoogleChina terrain map",           false,  false,  UrlFactory::GoogleChinaTerrain),
+    QGCGEOMAPTYPE(QGeoMapType::HybridMap,         "GoogleChina Hybrid Map",        "GoogleChina street map",            false,  false,  UrlFactory::GoogleChinaHybrid),
     // Bing
         QGCGEOMAPTYPE(QGeoMapType::StreetMap,         "Bing Street Map",          "Bing street map",                  false,  false,  UrlFactory::BingMap),
         QGCGEOMAPTYPE(QGeoMapType::SatelliteMapDay,   "Bing Satellite Map",       "Bing satellite map",               false,  false,  UrlFactory::BingSatellite),
