@@ -26,7 +26,6 @@
 #include "UAS.h"
 #include "LinkInterface.h"
 #include "QGC.h"
-#include "AudioOutput.h"
 #include "MAVLinkProtocol.h"
 #include "QGCMAVLink.h"
 #include "LinkManager.h"
@@ -998,11 +997,11 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
         } else if (joystickMode == Vehicle::JoystickModeRC) {
 
             // Save the new manual control inputs
-            manualRollAngle = roll;
-            manualPitchAngle = pitch;
-            manualYawAngle = yaw;
-            manualThrust = thrust;
-            manualButtons = buttons;
+            manualRollAngle     = roll;
+            manualPitchAngle    = pitch;
+            manualYawAngle      = yaw;
+            manualThrust        = thrust;
+            manualButtons       = buttons;
 
             // Store scaling values for all 3 axes
             const float axesScaling = 1.0 * 1000.0;
@@ -1010,19 +1009,22 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
             // Calculate the new commands for roll, pitch, yaw, and thrust
             const float newRollCommand = roll * axesScaling;
             // negate pitch value because pitch is negative for pitching forward but mavlink message argument is positive for forward
-            const float newPitchCommand = -pitch * axesScaling;
-            const float newYawCommand = yaw * axesScaling;
+            const float newPitchCommand  = -pitch * axesScaling;
+            const float newYawCommand    = yaw * axesScaling;
             const float newThrustCommand = thrust * axesScaling;
 
-            //qDebug() << newRollCommand << newPitchCommand << newYawCommand << newThrustCommand;
-
             // Send the MANUAL_COMMAND message
-            mavlink_msg_manual_control_pack_chan(mavlink->getSystemId(),
-                                                 mavlink->getComponentId(),
-                                                 _vehicle->priorityLink()->mavlinkChannel(),
-                                                 &message,
-                                                 this->uasId,
-                                                 newPitchCommand, newRollCommand, newThrustCommand, newYawCommand, buttons);
+            mavlink_msg_manual_control_pack_chan(
+                static_cast<uint8_t>(mavlink->getSystemId()),
+                static_cast<uint8_t>(mavlink->getComponentId()),
+                _vehicle->priorityLink()->mavlinkChannel(),
+                &message,
+                static_cast<uint8_t>(this->uasId),
+                static_cast<int16_t>(newPitchCommand),
+                static_cast<int16_t>(newRollCommand),
+                static_cast<int16_t>(newThrustCommand),
+                static_cast<int16_t>(newYawCommand),
+                buttons);
         }
 
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(), message);
@@ -1087,62 +1089,12 @@ void UAS::pairRX(int rxType, int rxSubType)
 }
 
 /**
-* If enabled, connect the flight gear link.
-*/
-#ifndef __mobile__
-void UAS::enableHilFlightGear(bool enable, QString options, bool sensorHil, QObject * configuration)
-{
-    Q_UNUSED(configuration);
-
-    QGCFlightGearLink* link = dynamic_cast<QGCFlightGearLink*>(simulation);
-    if (!link) {
-        // Delete wrong sim
-        if (simulation) {
-            stopHil();
-            delete simulation;
-        }
-        simulation = new QGCFlightGearLink(_vehicle, options);
-    }
-
-    float noise_scaler = 0.0001f;
-    xacc_var = noise_scaler * 0.2914f;
-    yacc_var = noise_scaler * 0.2914f;
-    zacc_var = noise_scaler * 0.9577f;
-    rollspeed_var = noise_scaler * 0.8126f;
-    pitchspeed_var = noise_scaler * 0.6145f;
-    yawspeed_var = noise_scaler * 0.5852f;
-    xmag_var = noise_scaler * 0.0786f;
-    ymag_var = noise_scaler * 0.0566f;
-    zmag_var = noise_scaler * 0.0333f;
-    abs_pressure_var = noise_scaler * 0.5604f;
-    diff_pressure_var = noise_scaler * 0.2604f;
-    pressure_alt_var = noise_scaler * 0.5604f;
-    temperature_var = noise_scaler * 0.7290f;
-
-    // Connect Flight Gear Link
-    link = dynamic_cast<QGCFlightGearLink*>(simulation);
-    link->setStartupArguments(options);
-    link->sensorHilEnabled(sensorHil);
-    // FIXME: this signal is not on the base hil configuration widget, only on the FG widget
-    //QObject::connect(configuration, SIGNAL(barometerOffsetChanged(float)), link, SLOT(setBarometerOffset(float)));
-    if (enable)
-    {
-        startHil();
-    }
-    else
-    {
-        stopHil();
-    }
-}
-#endif
-
-/**
 * If enabled, connect the JSBSim link.
 */
 #ifndef __mobile__
 void UAS::enableHilJSBSim(bool enable, QString options)
 {
-    QGCJSBSimLink* link = dynamic_cast<QGCJSBSimLink*>(simulation);
+    auto* link = qobject_cast<QGCJSBSimLink*>(simulation);
     if (!link) {
         // Delete wrong sim
         if (simulation) {
@@ -1152,7 +1104,7 @@ void UAS::enableHilJSBSim(bool enable, QString options)
         simulation = new QGCJSBSimLink(_vehicle, options);
     }
     // Connect Flight Gear Link
-    link = dynamic_cast<QGCJSBSimLink*>(simulation);
+    link = qobject_cast<QGCJSBSimLink*>(simulation);
     link->setStartupArguments(options);
     if (enable)
     {
@@ -1171,7 +1123,7 @@ void UAS::enableHilJSBSim(bool enable, QString options)
 #ifndef __mobile__
 void UAS::enableHilXPlane(bool enable)
 {
-    QGCXPlaneLink* link = dynamic_cast<QGCXPlaneLink*>(simulation);
+    auto* link = qobject_cast<QGCXPlaneLink*>(simulation);
     if (!link) {
         if (simulation) {
             stopHil();
@@ -1595,5 +1547,5 @@ void UAS::shutdownVehicle(void)
         simulation->deleteLater();
     }
 #endif
-    _vehicle = NULL;
+    _vehicle = nullptr;
 }

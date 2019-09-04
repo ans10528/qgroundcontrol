@@ -24,6 +24,8 @@ QGCPalette::Theme QGCPalette::_theme = QGCPalette::Dark;
 
 QMap<int, QMap<int, QMap<QString, QColor>>> QGCPalette::_colorInfoMap;
 
+QStringList QGCPalette::_colors;
+
 QGCPalette::QGCPalette(QObject* parent) :
     QObject(parent),
     _colorGroupEnabled(true)
@@ -44,7 +46,7 @@ QGCPalette::~QGCPalette()
     }
 }
 
-void QGCPalette::_buildMap(void)
+void QGCPalette::_buildMap()
 {
     //                                      Light                 Dark
     //                                      Disabled   Enabled    Disabled   Enabled
@@ -54,7 +56,7 @@ void QGCPalette::_buildMap(void)
     DECLARE_QGC_COLOR(text,                 "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(warningText,          "#cc0808", "#cc0808", "#f85761", "#f85761")
     DECLARE_QGC_COLOR(button,               "#ffffff", "#ffffff", "#707070", "#626270")
-    DECLARE_QGC_COLOR(buttonText,           "#9d9d9d", "#000000", "#202020", "#ffffff")
+    DECLARE_QGC_COLOR(buttonText,           "#9d9d9d", "#000000", "#A6A6A6", "#ffffff")
     DECLARE_QGC_COLOR(buttonHighlight,      "#e4e4e4", "#946120", "#3a3a3a", "#fff291")
     DECLARE_QGC_COLOR(buttonHighlightText,  "#2c2c2c", "#ffffff", "#2c2c2c", "#000000")
     DECLARE_QGC_COLOR(primaryButton,        "#585858", "#8cb3be", "#585858", "#8cb3be")
@@ -74,6 +76,7 @@ void QGCPalette::_buildMap(void)
     DECLARE_QGC_COLOR(alertBorder,          "#808080", "#808080", "#808080", "#808080")
     DECLARE_QGC_COLOR(alertText,            "#000000", "#000000", "#000000", "#000000")
     DECLARE_QGC_COLOR(missionItemEditor,    "#585858", "#dbfef8", "#585858", "#585d83")
+    DECLARE_QGC_COLOR(hoverColor,           "#585858", "#dbfef8", "#585858", "#585d83")
 
     // Colors are not affecting by theming
     DECLARE_QGC_COLOR(mapWidgetBorderLight, "#ffffff", "#ffffff", "#ffffff", "#ffffff")

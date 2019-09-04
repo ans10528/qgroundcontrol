@@ -70,7 +70,7 @@ MockLink::MockLink(SharedLinkConfigurationPointer& config)
     , _vehicleLatitude                      (_defaultVehicleLatitude + ((_vehicleSystemId - 128) * 0.0001))     // Slight offset for each vehicle
     , _vehicleLongitude                     (_defaultVehicleLongitude + ((_vehicleSystemId - 128) * 0.0001))
     , _vehicleAltitude                      (_defaultVehicleAltitude)
-    , _fileServer                           (NULL)
+    , _fileServer                           (nullptr)
     , _sendStatusText                       (false)
     , _apmSendHomePositionOnEmptyList       (false)
     , _failureMode                          (MockConfiguration::FailNone)
@@ -104,6 +104,7 @@ MockLink::MockLink(SharedLinkConfigurationPointer& config)
 
     _adsbVehicleCoordinate = QGeoCoordinate(_vehicleLatitude, _vehicleLongitude).atDistanceAndAzimuth(1000, _adsbAngle);
     _adsbVehicleCoordinate.setAltitude(100);
+    _runningTime.start();
 }
 
 MockLink::~MockLink(void)
@@ -176,6 +177,7 @@ void MockLink::_run1HzTasks(void)
             _sendHighLatency2();
         } else {
             _sendVibration();
+            _sendSysStatus();
             _sendADSBVehicles();
             if (!qgcApp()->runningUnitTests()) {
                 // Sending RC Channels during unit test breaks RC tests which does it's own RC simulation
@@ -230,11 +232,13 @@ void MockLink::_loadParams(void)
 
     if (_firmwareType == MAV_AUTOPILOT_ARDUPILOTMEGA) {
         if (_vehicleType == MAV_TYPE_FIXED_WING) {
-            paramFile.setFileName(":/MockLink/APMArduPlaneMockLink.params");
+            paramFile.setFileName(":/FirmwarePlugin/APM/Plane.OfflineEditing.params");
         } else if (_vehicleType == MAV_TYPE_SUBMARINE ) {
             paramFile.setFileName(":/MockLink/APMArduSubMockLink.params");
+        } else if (_vehicleType == MAV_TYPE_GROUND_ROVER ) {
+            paramFile.setFileName(":/FirmwarePlugin/APM/Rover.OfflineEditing.params");
         } else {
-            paramFile.setFileName(":/MockLink/APMArduCopterMockLink.params");
+            paramFile.setFileName(":/FirmwarePlugin/APM/Copter.OfflineEditing.params");
         }
     } else {
         paramFile.setFileName(":/MockLink/PX4MockLink.params");
@@ -352,6 +356,28 @@ void MockLink::_sendHighLatency2(void)
                                         0,                          // wp_num
                                         0,                          // failure_flags
                                         0, 0, 0);                   // custom0, custom1, custom2
+    respondWithMavlinkMessage(msg);
+}
+
+void MockLink::_sendSysStatus(void)
+{
+    if(_batteryRemaining > 50) {
+        _batteryRemaining = static_cast<int8_t>(100 - (_runningTime.elapsed() / 1000));
+    }
+    mavlink_message_t   msg;
+    mavlink_msg_sys_status_pack_chan(
+        _vehicleSystemId,
+        _vehicleComponentId,
+        static_cast<uint8_t>(_mavlinkChannel),
+        &msg,
+        0,          // onboard_control_sensors_present
+        0,          // onboard_control_sensors_enabled
+        0,          // onboard_control_sensors_health
+        250,        // load
+        4200 * 4,   // voltage_battery
+        8000,       // current_battery
+        _batteryRemaining, // battery_remaining
+        0,0,0,0,0,0);
     respondWithMavlinkMessage(msg);
 }
 
@@ -507,7 +533,7 @@ void MockLink::_handleManualControl(const mavlink_message_t& msg)
     mavlink_manual_control_t manualControl;
     mavlink_msg_manual_control_decode(&msg, &manualControl);
 
-    qDebug() << "MANUAL_CONTROL" << manualControl.x << manualControl.y << manualControl.z << manualControl.r;
+    qCDebug(MockLinkLog) << "MANUAL_CONTROL" << manualControl.x << manualControl.y << manualControl.z << manualControl.r;
 }
 
 void MockLink::_setParamFloatUnionIntoMap(int componentId, const QString& paramName, float paramFloat)
@@ -947,9 +973,17 @@ void MockLink::_respondWithAutopilotVersion(void)
     uint32_t flightVersion = 0;
 #if !defined(NO_ARDUPILOT_DIALECT)
     if (_firmwareType == MAV_AUTOPILOT_ARDUPILOTMEGA) {
-        flightVersion |= 3 << (8*3);
-        flightVersion |= 5 << (8*2);
-        flightVersion |= 0 << (8*1);
+        if (_vehicleType == MAV_TYPE_FIXED_WING) {
+            flightVersion |= 9 << (8*2);
+        } else if (_vehicleType == MAV_TYPE_SUBMARINE ) {
+            flightVersion |= 5 << (8*2);
+        } else if (_vehicleType == MAV_TYPE_GROUND_ROVER ) {
+            flightVersion |= 5 << (8*2);
+        } else {
+            flightVersion |= 6 << (8*2);
+        }
+        flightVersion |= 3 << (8*3);    // Major
+        flightVersion |= 0 << (8*1);    // Patch
         flightVersion |= FIRMWARE_VERSION_TYPE_DEV << (8*0);
     } else if (_firmwareType == MAV_AUTOPILOT_PX4) {
 #endif
@@ -1100,7 +1134,7 @@ MockConfiguration::MockConfiguration(MockConfiguration* source)
 void MockConfiguration::copyFrom(LinkConfiguration *source)
 {
     LinkConfiguration::copyFrom(source);
-    MockConfiguration* usource = dynamic_cast<MockConfiguration*>(source);
+    auto* usource = qobject_cast<MockConfiguration*>(source);
 
     if (!usource) {
         qWarning() << "dynamic_cast failed" << source << usource;

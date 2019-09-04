@@ -3,7 +3,7 @@
 # Please see our website at <http://qgroundcontrol.org>
 # Maintainer:
 # Lorenz Meier <lm@inf.ethz.ch>
-# (c) 2009-2014 QGroundControl Developers
+# (c) 2009-2019 QGroundControl Developers
 # License terms set in COPYING.md
 # -------------------------------------------------
 
@@ -21,7 +21,9 @@ linux {
         message("Linux build")
         CONFIG  += LinuxBuild
         DEFINES += __STDC_LIMIT_MACROS
+        DEFINES += QGC_ENABLE_NFC RW_SUPPORT
         DEFINES += QGC_GST_TAISYNC_ENABLED
+        DEFINES += QGC_GST_MICROHARD_ENABLED 
         linux-clang {
             message("Linux clang")
             QMAKE_CXXFLAGS += -Qunused-arguments -fcolor-diagnostics
@@ -31,19 +33,31 @@ linux {
         CONFIG += LinuxBuild
         DEFINES += __STDC_LIMIT_MACROS __rasp_pi2__
         DEFINES += QGC_GST_TAISYNC_ENABLED
-    } else : android-g++ | android-clang {
+        DEFINES += QGC_GST_MICROHARD_ENABLED 
+    } else : android-clang {
         CONFIG += AndroidBuild MobileBuild
         DEFINES += __android__
         DEFINES += __STDC_LIMIT_MACROS
         DEFINES += QGC_ENABLE_BLUETOOTH
         DEFINES += QGC_GST_TAISYNC_ENABLED
+        DEFINES += QGC_GST_MICROHARD_ENABLED 
+        QMAKE_CXXFLAGS += -Wno-address-of-packed-member
+        QMAKE_CXXFLAGS += -Wno-unused-command-line-argument
+        QMAKE_CFLAGS += -Wno-unused-command-line-argument
+        QMAKE_LINK += -nostdlib++ # Hack fix?: https://forum.qt.io/topic/103713/error-cannot-find-lc-qt-5-12-android
         target.path = $$DESTDIR
-        equals(ANDROID_TARGET_ARCH, x86)  {
+        equals(ANDROID_TARGET_ARCH, armeabi-v7a)  {
+            DEFINES += __androidArm32__
+            message("Android Arm 32 bit build")
+        } else:equals(ANDROID_TARGET_ARCH, arm64-v8a)  {
+            DEFINES += __androidArm64__
+            message("Android Arm 64 bit build")
+        } else:equals(ANDROID_TARGET_ARCH, x86)  {
             CONFIG += Androidx86Build
             DEFINES += __androidx86__
-            message("Android x86 build")
-        } else {
             message("Android Arm build")
+        } else {
+            error("Unsupported Android architecture: $${ANDROID_TARGET_ARCH}")
         }
     } else {
         error("Unsuported Linux toolchain, only GCC 32- or 64-bit is supported")
@@ -54,6 +68,7 @@ linux {
         CONFIG += WindowsBuild
         DEFINES += __STDC_LIMIT_MACROS
         DEFINES += QGC_GST_TAISYNC_ENABLED
+        DEFINES += QGC_GST_MICROHARD_ENABLED 
     } else {
         error("Unsupported Windows toolchain, only Visual Studio 2015 is supported")
     }
@@ -64,6 +79,7 @@ linux {
         CONFIG  += x86_64
         CONFIG  -= x86
         DEFINES += QGC_GST_TAISYNC_ENABLED
+        DEFINES += QGC_GST_MICROHARD_ENABLED 
         equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
                 QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
         } else {
@@ -89,7 +105,7 @@ linux {
     DEFINES += NO_SERIAL_LINK
     DEFINES += QGC_DISABLE_UVC
     DEFINES += QGC_GST_TAISYNC_ENABLED
-    QMAKE_IOS_DEPLOYMENT_TARGET = 8.0
+    QMAKE_IOS_DEPLOYMENT_TARGET = 11.0
     QMAKE_APPLE_TARGETED_DEVICE_FAMILY = 1,2 # Universal
     QMAKE_LFLAGS += -Wl,-no_pie
 } else {
@@ -126,14 +142,15 @@ exists ($$PWD/.git) {
     contains(GIT_DESCRIBE, v[0-9]+.[0-9]+.[0-9]+) {
         # release version "vX.Y.Z"
         GIT_VERSION = $${GIT_DESCRIBE}
+        VERSION      = $$replace(GIT_DESCRIBE, "v", "")
+        VERSION      = $$replace(VERSION, "-", ".")
+        VERSION      = $$section(VERSION, ".", 0, 3)
     } else {
         # development version "Development branch:sha date"
         GIT_VERSION = "Development $${GIT_BRANCH}:$${GIT_HASH} $${GIT_TIME}"
+        VERSION         = 0.0.0
     }
 
-    VERSION      = $$replace(GIT_DESCRIBE, "v", "")
-    VERSION      = $$replace(VERSION, "-", ".")
-    VERSION      = $$section(VERSION, ".", 0, 3)
     MacBuild {
         MAC_VERSION  = $$section(VERSION, ".", 0, 2)
         MAC_BUILD    = $$section(VERSION, ".", 3, 3)
@@ -248,6 +265,10 @@ ReleaseBuild {
     }
 
     WindowsBuild {
+        *msvc* { # visual studio spec filter
+            # Run compilation using VS compiler using multiple threads
+            QMAKE_CXXFLAGS += -MP
+        }
         # Enable function level linking and enhanced optimized debugging
         QMAKE_CFLAGS_RELEASE   += /Gy /Zo
         QMAKE_CXXFLAGS_RELEASE += /Gy /Zo

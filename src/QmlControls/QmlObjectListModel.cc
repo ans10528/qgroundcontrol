@@ -32,6 +32,14 @@ QmlObjectListModel::~QmlObjectListModel()
     
 }
 
+QObject* QmlObjectListModel::get(int index)
+{
+    if (index < 0 || index >= _objectList.count()) {
+        return nullptr;
+    }
+    return _objectList[index];
+}
+
 int QmlObjectListModel::rowCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent);
@@ -119,7 +127,7 @@ bool QmlObjectListModel::removeRows(int position, int rows, const QModelIndex& p
 QObject* QmlObjectListModel::operator[](int index)
 {
     if (index < 0 || index >= _objectList.count()) {
-        return NULL;
+        return nullptr;
     }
     return _objectList[index];
 }
@@ -127,7 +135,7 @@ QObject* QmlObjectListModel::operator[](int index)
 const QObject* QmlObjectListModel::operator[](int index) const
 {
     if (index < 0 || index >= _objectList.count()) {
-        return NULL;
+        return nullptr;
     }
     return _objectList[index];
 }
@@ -160,19 +168,17 @@ void QmlObjectListModel::insert(int i, QObject* object)
     if (i < 0 || i > _objectList.count()) {
         qWarning() << "Invalid index index:count" << i << _objectList.count();
     }
-    
-    QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
-    
-    // Look for a dirtyChanged signal on the object
-    if (object->metaObject()->indexOfSignal(QMetaObject::normalizedSignature("dirtyChanged(bool)")) != -1) {
-        if (!_skipDirtyFirstItem || i != 0) {
-            QObject::connect(object, SIGNAL(dirtyChanged(bool)), this, SLOT(_childDirtyChanged(bool)));
+    if(object) {
+        QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
+        // Look for a dirtyChanged signal on the object
+        if (object->metaObject()->indexOfSignal(QMetaObject::normalizedSignature("dirtyChanged(bool)")) != -1) {
+            if (!_skipDirtyFirstItem || i != 0) {
+                QObject::connect(object, SIGNAL(dirtyChanged(bool)), this, SLOT(_childDirtyChanged(bool)));
+            }
         }
     }
-
     _objectList.insert(i, object);
     insertRows(i, 1);
-    
     setDirty(true);
 }
 

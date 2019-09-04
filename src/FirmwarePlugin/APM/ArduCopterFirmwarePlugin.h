@@ -41,9 +41,11 @@ public:
         THROW       = 18,
         AVOID_ADSB  = 19,
         GUIDED_NOGPS= 20,
-        SAFE_RTL   = 21,   //Safe Return to Launch
+        SMART_RTL   = 21,  // SMART_RTL returns to home by retracing its steps
+        FLOWHOLD    = 22,  // FLOWHOLD holds position with optical flow without rangefinder
+        FOLLOW      = 23,  // follow attempts to follow another vehicle or ground station
+        ZIGZAG      = 24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
     };
-    static const int modeCount = 22;
 
     APMCopterMode(uint32_t mode, bool settable);
 };
@@ -65,8 +67,9 @@ public:
     QString pauseFlightMode                     (void) const override { return QString("Brake"); }
     QString landFlightMode                      (void) const override { return QString("Land"); }
     QString takeControlFlightMode               (void) const override { return QString("Loiter"); }
-    bool    vehicleYawsToNextWaypointInMission  (const Vehicle* vehicle) const final;
-    QString autoDisarmParameter                 (Vehicle* vehicle) final { Q_UNUSED(vehicle); return QStringLiteral("DISARM_DELAY"); }
+    bool    vehicleYawsToNextWaypointInMission  (const Vehicle* vehicle) const override;
+    QString autoDisarmParameter                 (Vehicle* vehicle) override { Q_UNUSED(vehicle); return QStringLiteral("DISARM_DELAY"); }
+    bool    supportsSmartRTL                    (void) const override { return true; }
 
 private:
     static bool _remapParamNameIntialized;

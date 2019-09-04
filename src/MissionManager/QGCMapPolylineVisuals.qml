@@ -7,11 +7,11 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.3
-import QtQuick.Controls 1.2
-import QtLocation       5.3
-import QtPositioning    5.3
-import QtQuick.Dialogs  1.2
+import QtQuick                      2.11
+import QtQuick.Controls             2.4
+import QtLocation                   5.3
+import QtPositioning                5.3
+import QtQuick.Dialogs              1.2
 
 import QGroundControl                   1.0
 import QGroundControl.ScreenTools       1.0
@@ -20,11 +20,10 @@ import QGroundControl.Controls          1.0
 import QGroundControl.FlightMap         1.0
 import QGroundControl.ShapeFileHelper   1.0
 
-/// QGCmapPolyline map visuals
+/// QGCMapPolyline map visuals
 Item {
     id: _root
 
-    property var    qgcView                     ///< QGCView for popping dialogs
     property var    mapControl                  ///< Map control to place item in
     property var    mapPolyline                 ///< QGCMapPolyline object
     property bool   interactive:    mapPolyline.interactive
@@ -99,6 +98,8 @@ Item {
         }
     }
 
+    onVisibleChanged: _polylineComponent.visible = visible
+
     Component.onCompleted: {
         addVisuals()
         if (interactive) {
@@ -115,7 +116,6 @@ Item {
 
     QGCFileDialog {
         id:             kmlLoadDialog
-        qgcView:        _root.qgcView
         folder:         QGroundControl.settingsManager.appSettings.missionSavePath
         title:          qsTr("Select KML File")
         selectExisting: true
@@ -128,7 +128,7 @@ Item {
         }
     }
 
-    Menu {
+    QGCMenu {
         id: menu
         property int _removeVertexIndex
 
@@ -138,22 +138,22 @@ Item {
             menu.popup()
         }
 
-        MenuItem {
+        QGCMenuItem {
             id:             removeVertexItem
             text:           qsTr("Remove vertex" )
             onTriggered:    mapPolyline.removeVertex(menu._removeVertexIndex)
         }
 
-        MenuSeparator {
+        QGCMenuSeparator {
             visible:        removeVertexItem.visible
         }
 
-        MenuItem {
+        QGCMenuItem {
             text:           qsTr("Edit position..." )
-            onTriggered:    qgcView.showDialog(editPositionDialog, qsTr("Edit Position"), qgcView.showDialogDefaultWidth, StandardButton.Cancel)
+            onTriggered:    mainWindow.showComponentDialog(editPositionDialog, qsTr("Edit Position"), mainWindow.showDialogDefaultWidth, StandardButton.Cancel)
         }
 
-        MenuItem {
+        QGCMenuItem {
             text:           qsTr("Load KML...")
             onTriggered:    kmlLoadDialog.openForLoad()
         }

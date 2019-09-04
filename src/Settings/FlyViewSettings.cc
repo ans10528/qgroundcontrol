@@ -14,9 +14,13 @@
 
 DECLARE_SETTINGGROUP(FlyView, "FlyView")
 {
-    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership); \
     qmlRegisterUncreatableType<FlyViewSettings>("QGroundControl.SettingsManager", 1, 0, "FlyViewSettings", "Reference only"); \
 }
 
 DECLARE_SETTINGSFACT(FlyViewSettings, guidedMinimumAltitude)
 DECLARE_SETTINGSFACT(FlyViewSettings, guidedMaximumAltitude)
+DECLARE_SETTINGSFACT(FlyViewSettings, showLogReplayStatusBar)
+DECLARE_SETTINGSFACT(FlyViewSettings, alternateInstrumentPanel)
+DECLARE_SETTINGSFACT(FlyViewSettings, showAdditionalIndicatorsCompass)
+DECLARE_SETTINGSFACT(FlyViewSettings, lockNoseUpCompass)
+DECLARE_SETTINGSFACT(FlyViewSettings, maxGoToLocationDistance)

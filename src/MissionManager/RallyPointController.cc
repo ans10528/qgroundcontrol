@@ -25,10 +25,6 @@
 #include "AppSettings.h"
 #include "PlanMasterController.h"
 
-#ifndef __mobile__
-#include "QGCQFileDialog.h"
-#endif
-
 #include <QJsonDocument>
 #include <QJsonArray>
 
@@ -41,7 +37,7 @@ RallyPointController::RallyPointController(PlanMasterController* masterControlle
     : PlanElementController(masterController, parent)
     , _rallyPointManager(_managerVehicle->rallyPointManager())
     , _dirty(false)
-    , _currentRallyPoint(NULL)
+    , _currentRallyPoint(nullptr)
     , _itemsRequested(false)
 {
     connect(&_points, &QmlObjectListModel::countChanged, this, &RallyPointController::_updateContainsItems);
@@ -59,8 +55,8 @@ void RallyPointController::managerVehicleChanged(Vehicle* managerVehicle)
     if (_managerVehicle) {
         _rallyPointManager->disconnect(this);
         _managerVehicle->disconnect(this);
-        _managerVehicle = NULL;
-        _rallyPointManager = NULL;
+        _managerVehicle = nullptr;
+        _rallyPointManager = nullptr;
     }
 
     _managerVehicle = managerVehicle;
@@ -142,7 +138,7 @@ void RallyPointController::removeAll(void)
 {
     _points.clearAndDeleteContents();
     setDirty(true);
-    setCurrentRallyPoint(NULL);
+    setCurrentRallyPoint(nullptr);
 }
 
 void RallyPointController::removeAllFromVehicle(void)
@@ -272,7 +268,7 @@ void RallyPointController::removePoint(QObject* rallyPoint)
         newIndex = qMax(newIndex, 0);
         setCurrentRallyPoint(_points[newIndex]);
     } else {
-        setCurrentRallyPoint(NULL);
+        setCurrentRallyPoint(nullptr);
     }
 }
 
@@ -286,7 +282,7 @@ void RallyPointController::setCurrentRallyPoint(QObject* rallyPoint)
 
 void RallyPointController::_setFirstPointCurrent(void)
 {
-    setCurrentRallyPoint(_points.count() ? _points[0] : NULL);
+    setCurrentRallyPoint(_points.count() ? _points[0] : nullptr);
 }
 
 bool RallyPointController::containsItems(void) const
