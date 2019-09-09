@@ -94,10 +94,10 @@ UrlFactory::getImageFormat(MapType type, const QByteArray& image)
                 case GoogleHybrid:
                 case BingMap:
                 case StatkartTopo:
-            case GoogleChinaMap:
-            case GoogleChinaLabels:
-            case GoogleChinaTerrain:
-            case GoogleChinaHybrid:
+                case GoogleChinaMap:
+                case GoogleChinaLabels:
+                case GoogleChinaTerrain:
+                case GoogleChinaHybrid:
                     format = "png";
                     break;
                 case EniroTopo:
