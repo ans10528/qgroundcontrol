@@ -39,12 +39,6 @@ public:
         GoogleTerrain           = 16,
         GoogleHybrid            = 20,
 
-        GoogleChinaMap               = 11,
-        GoogleChinaSatellite         = 14,
-        GoogleChinaLabels            = 18,
-        GoogleChinaTerrain           = 116,
-        GoogleChinaHybrid            = 120,
-
         OpenStreetMap           = 32,
         OpenStreetOsm           = 33,
         OpenStreetMapSurfer     = 34,
@@ -65,6 +59,12 @@ public:
         VWorldMap                = 800,
         VWorldSatellite          = 801,
         VWorldStreet             = 802,
+
+        GoogleChinaMap          = 2001,
+        GoogleChinaSatellite    = 2004,
+        GoogleChinaLabels       = 2008,
+        GoogleChinaTerrain      = 2016,
+        GoogleChinaHybrid       = 2020,
 
         MapboxStreets           = 6000,
         MapboxLight             = 6001,
