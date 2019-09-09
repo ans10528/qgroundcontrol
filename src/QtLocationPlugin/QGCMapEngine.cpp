@@ -536,11 +536,11 @@ QGCMapEngine::concurrentDownloads(UrlFactory::MapType type)
     case UrlFactory::VWorldMap:
     case UrlFactory::VWorldSatellite:
     case UrlFactory::VWorldStreet:
-    case   UrlFactory::GoogleChinaMap:
-    case   UrlFactory::GoogleChinaSatellite:
-    case   UrlFactory::GoogleChinaLabels:
-    case   UrlFactory::GoogleChinaTerrain:
-    case   UrlFactory::GoogleChinaHybrid:
+    case UrlFactory::GoogleChinaMap:
+    case UrlFactory::GoogleChinaSatellite:
+    case UrlFactory::GoogleChinaLabels:
+    case UrlFactory::GoogleChinaTerrain:
+    case UrlFactory::GoogleChinaHybrid:
         return 12;
     /*
     case UrlFactory::MapQuestMap:
