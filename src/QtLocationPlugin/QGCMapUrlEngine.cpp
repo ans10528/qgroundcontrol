@@ -202,13 +202,13 @@ UrlFactory::getTileURL(MapType type, int x, int y, int zoom, QNetworkAccessManag
             request.setRawHeader("Referrer", "https://api.airmap.com/");
             break;
 
-    case GoogleChinaMap:
-    case GoogleChinaSatellite:
-    case GoogleChinaLabels:
-    case GoogleChinaTerrain:
-    case GoogleChinaHybrid:
-         request.setRawHeader("Referrer", "http://ditu.google.cn/");
-        break;
+        case GoogleChinaMap:
+        case GoogleChinaSatellite:
+        case GoogleChinaLabels:
+        case GoogleChinaTerrain:
+        case GoogleChinaHybrid:
+            request.setRawHeader("Referrer", "http://ditu.google.cn/");
+            break;
 
         default:
             break;
