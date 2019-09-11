@@ -69,6 +69,7 @@ MissionController::MissionController(PlanMasterController* masterController, QOb
     , _progressPct              (0)
     , _currentPlanViewIndex     (-1)
     , _currentPlanViewItem      (nullptr)
+    , _splitSegment             (nullptr)
 {
     _resetMissionFlightStatus();
     managerVehicleChanged(_managerVehicle);
@@ -148,8 +149,10 @@ void MissionController::_newMissionItemsAvailableFromVehicle(bool removeAllReque
     qCDebug(MissionControllerLog) << "_newMissionItemsAvailableFromVehicle flyView:count" << _flyView << _missionManager->missionItems().count();
 
     // Fly view always reloads on _loadComplete
-    // Plan view only reloads on _loadComplete if specifically requested
-    if (_flyView || removeAllRequested || _itemsRequested || _visualItems->count() <= 1) {
+    // Plan view only reloads if:
+    //  - Load was specifically requested
+    //  - There is no current Plan
+    if (_flyView || removeAllRequested || _itemsRequested || isEmpty()) {
         // Fly Mode (accept if):
         //      - Always accepts new items from the vehicle so Fly view is kept up to date
         // Edit Mode (accept if):
@@ -346,7 +349,7 @@ int MissionController::_nextSequenceNumber(void)
     }
 }
 
-int MissionController::insertSimpleMissionItem(QGeoCoordinate coordinate, int i)
+int MissionController::insertSimpleMissionItem(QGeoCoordinate coordinate, int visualItemIndex)
 {
     int sequenceNumber = _nextSequenceNumber();
     SimpleMissionItem * newItem = new SimpleMissionItem(_controllerVehicle, _flyView, this);
@@ -364,13 +367,13 @@ int MissionController::insertSimpleMissionItem(QGeoCoordinate coordinate, int i)
         double  prevAltitude;
         int     prevAltitudeMode;
 
-        if (_findPreviousAltitude(i, &prevAltitude, &prevAltitudeMode)) {
+        if (_findPreviousAltitude(visualItemIndex, &prevAltitude, &prevAltitudeMode)) {
             newItem->altitude()->setRawValue(prevAltitude);
             newItem->setAltitudeMode(static_cast<QGroundControlQmlGlobal::AltitudeMode>(prevAltitudeMode));
         }
     }
     newItem->setMissionFlightStatus(_missionFlightStatus);
-    _visualItems->insert(i, newItem);
+    _visualItems->insert(visualItemIndex, newItem);
 
     // We send the click coordinate through here to be able to set the planned home position from the user click location if needed
     _recalcAllWithClickCoordinate(coordinate);
@@ -378,7 +381,7 @@ int MissionController::insertSimpleMissionItem(QGeoCoordinate coordinate, int i)
     return newItem->sequenceNumber();
 }
 
-int MissionController::insertROIMissionItem(QGeoCoordinate coordinate, int i)
+int MissionController::insertROIMissionItem(QGeoCoordinate coordinate, int visualItemIndex)
 {
     int sequenceNumber = _nextSequenceNumber();
     SimpleMissionItem * newItem = new SimpleMissionItem(_controllerVehicle, _flyView, this);
@@ -392,18 +395,18 @@ int MissionController::insertROIMissionItem(QGeoCoordinate coordinate, int i)
     double  prevAltitude;
     int     prevAltitudeMode;
 
-    if (_findPreviousAltitude(i, &prevAltitude, &prevAltitudeMode)) {
+    if (_findPreviousAltitude(visualItemIndex, &prevAltitude, &prevAltitudeMode)) {
         newItem->altitude()->setRawValue(prevAltitude);
         newItem->setAltitudeMode(static_cast<QGroundControlQmlGlobal::AltitudeMode>(prevAltitudeMode));
     }
-    _visualItems->insert(i, newItem);
+    _visualItems->insert(visualItemIndex, newItem);
 
     _recalcAll();
 
     return newItem->sequenceNumber();
 }
 
-int MissionController::insertComplexMissionItem(QString itemName, QGeoCoordinate mapCenterCoordinate, int i)
+int MissionController::insertComplexMissionItem(QString itemName, QGeoCoordinate mapCenterCoordinate, int visualItemIndex)
 {
     ComplexMissionItem* newItem;
 
@@ -422,10 +425,10 @@ int MissionController::insertComplexMissionItem(QString itemName, QGeoCoordinate
         return sequenceNumber;
     }
 
-    return _insertComplexMissionItemWorker(newItem, i);
+    return _insertComplexMissionItemWorker(newItem, visualItemIndex);
 }
 
-int MissionController::insertComplexMissionItemFromKMLOrSHP(QString itemName, QString file, int i)
+int MissionController::insertComplexMissionItemFromKMLOrSHP(QString itemName, QString file, int visualItemIndex)
 {
     ComplexMissionItem* newItem;
 
@@ -440,10 +443,10 @@ int MissionController::insertComplexMissionItemFromKMLOrSHP(QString itemName, QS
         return _nextSequenceNumber();
     }
 
-    return _insertComplexMissionItemWorker(newItem, i);
+    return _insertComplexMissionItemWorker(newItem, visualItemIndex);
 }
 
-int MissionController::_insertComplexMissionItemWorker(ComplexMissionItem* complexItem, int i)
+int MissionController::_insertComplexMissionItemWorker(ComplexMissionItem* complexItem, int visualItemIndex)
 {
     int sequenceNumber = _nextSequenceNumber();
     bool surveyStyleItem = qobject_cast<SurveyComplexItem*>(complexItem) ||
@@ -479,10 +482,10 @@ int MissionController::_insertComplexMissionItemWorker(ComplexMissionItem* compl
     complexItem->setSequenceNumber(sequenceNumber);
     _initVisualItem(complexItem);
 
-    if (i == -1) {
+    if (visualItemIndex == -1) {
         _visualItems->append(complexItem);
     } else {
-        _visualItems->insert(i, complexItem);
+        _visualItems->insert(visualItemIndex, complexItem);
     }
 
     //-- Keep track of bounding box changes in complex items
@@ -1099,7 +1102,7 @@ CoordinateVector* MissionController::_addWaypointLineSegment(CoordVectHashTable&
 void MissionController::_recalcWaypointLines(void)
 {
     int                 segmentCount = 0;
-    CoordinateVector*   lastCoordVector = nullptr;
+    VisualItemPair      lastSegmentVisualItemPair;
     bool                firstCoordinateItem =   true;
     VisualMissionItem*  lastCoordinateItem =    qobject_cast<VisualMissionItem*>(_visualItems->get(0));
 
@@ -1108,9 +1111,14 @@ void MissionController::_recalcWaypointLines(void)
     qCDebug(MissionControllerLog) << "_recalcWaypointLines homePositionValid" << homePositionValid;
 
     CoordVectHashTable old_table = _linesTable;
+
     _linesTable.clear();
-    _waypointLines.clear();
     _waypointPath.clear();
+
+    _waypointLines.beginReset();
+    _directionArrows.beginReset();
+
+    _waypointLines.clear();
     _directionArrows.clear();
 
     bool linkEndToHome;
@@ -1136,15 +1144,21 @@ void MissionController::_recalcWaypointLines(void)
 
         if (item->specifiesCoordinate() && !item->isStandaloneCoordinate()) {
             if (lastCoordinateItem != _settingsItem || (homePositionValid && linkStartToHome)) {
-                if (!_flyView) {
-                    VisualItemPair pair(lastCoordinateItem, item);
-                    lastCoordVector = _addWaypointLineSegment(old_table, pair);
-                    segmentCount++;
-                    if (firstCoordinateItem || !lastCoordinateItem->isSimpleItem() || !item->isSimpleItem()) {
-                        _directionArrows.append(lastCoordVector);
-                    } else if (segmentCount > 5) {
-                        segmentCount = 0;
-                        _directionArrows.append(lastCoordVector);
+                // Direction arrows are added to the first segment and every 5 segments in the middle.
+                bool addDirectionArrow = false;
+                if (firstCoordinateItem || !lastCoordinateItem->isSimpleItem() || !item->isSimpleItem()) {
+                    addDirectionArrow = true;
+                } else if (segmentCount > 5) {
+                    segmentCount = 0;
+                    addDirectionArrow = true;
+                }
+                segmentCount++;
+
+                lastSegmentVisualItemPair =  VisualItemPair(lastCoordinateItem, item);
+                if (!_flyView || addDirectionArrow) {
+                    CoordinateVector* coordVector = _addWaypointLineSegment(old_table, lastSegmentVisualItemPair);
+                    if (addDirectionArrow) {
+                        _directionArrows.append(coordVector);
                     }
                 }
             }
@@ -1159,15 +1173,36 @@ void MissionController::_recalcWaypointLines(void)
     }
 
     if (linkEndToHome && lastCoordinateItem != _settingsItem && homePositionValid) {
-        if (!_flyView) {
-            VisualItemPair pair(lastCoordinateItem, _settingsItem);
-            lastCoordVector = _addWaypointLineSegment(old_table, pair);
-        } else {
+        lastSegmentVisualItemPair =  VisualItemPair(lastCoordinateItem, _settingsItem);
+        if (_flyView) {
             _waypointPath.append(QVariant::fromValue(_settingsItem->coordinate()));
         }
+        _addWaypointLineSegment(old_table, lastSegmentVisualItemPair);
     }
 
-    {
+    // Add direction arrow to last segment
+    if (lastSegmentVisualItemPair.first) {
+        CoordinateVector* coordVector = nullptr;
+
+        // The pair may not be in the hash, this can happen in the fly view where only segments with arrows on them are added to ahsh.
+        // check for that first and add if needed
+
+        if (_linesTable.contains(lastSegmentVisualItemPair)) {
+            // Pair exists in the new table already just reuse it
+             coordVector = _linesTable[lastSegmentVisualItemPair];
+        } else if (old_table.contains(lastSegmentVisualItemPair)) {
+            // Pair already exists in old table, pull from old to new and reuse
+            _linesTable[lastSegmentVisualItemPair] = coordVector = old_table.take(lastSegmentVisualItemPair);
+        } else {
+            // Create a new segment. Since this is the fly view there is no need to wire change signals.
+            coordVector = new CoordinateVector(lastSegmentVisualItemPair.first->isSimpleItem() ? lastSegmentVisualItemPair.first->coordinate() : lastSegmentVisualItemPair.first->exitCoordinate(), lastSegmentVisualItemPair.second->coordinate(), this);
+            _linesTable[lastSegmentVisualItemPair] = coordVector;
+        }
+
+        _directionArrows.append(coordVector);
+    }
+
+    if (!_flyView) {
         // Create a temporary QObjectList and replace the model data
         QObjectList objs;
         objs.reserve(_linesTable.count());
@@ -1179,12 +1214,11 @@ void MissionController::_recalcWaypointLines(void)
         _waypointLines.swapObjectList(objs);
     }
 
+    _waypointLines.endReset();
+    _directionArrows.endReset();
+
     // Anything left in the old table is an obsolete line object that can go
     qDeleteAll(old_table);
-
-    if (lastCoordVector) {
-        _directionArrows.append(lastCoordVector);
-    }
 
     _recalcMissionFlightStatus();
 
@@ -1196,7 +1230,6 @@ void MissionController::_recalcWaypointLines(void)
         _waypointPath.append(QVariant::fromValue(QGeoCoordinate(0, 0)));
     }
 
-    emit waypointLinesChanged();
     emit waypointPathChanged();
 }
 
@@ -2074,6 +2107,7 @@ VisualMissionItem* MissionController::currentPlanViewItem(void) const
 void MissionController::setCurrentPlanViewIndex(int sequenceNumber, bool force)
 {
     if(_visualItems && (force || sequenceNumber != _currentPlanViewIndex)) {
+        _splitSegment = nullptr;
         _currentPlanViewItem  = nullptr;
         _currentPlanViewIndex = -1;
         for (int i = 0; i < _visualItems->count(); i++) {
@@ -2082,12 +2116,26 @@ void MissionController::setCurrentPlanViewIndex(int sequenceNumber, bool force)
                 pVI->setIsCurrentItem(true);
                 _currentPlanViewItem  = pVI;
                 _currentPlanViewIndex = sequenceNumber;
+
+                if (pVI->specifiesCoordinate() && !pVI->isStandaloneCoordinate()) {
+                    // Determine split segment used to display line split editing ui.
+                    for (int j=i-1; j>0; j--) {
+                        VisualMissionItem* pPrev = qobject_cast<VisualMissionItem*>(_visualItems->get(j));
+                        if (pPrev->specifiesCoordinate() && !pPrev->isStandaloneCoordinate()) {
+                            VisualItemPair splitPair(pPrev, pVI);
+                            if (_linesTable.contains(splitPair)) {
+                                _splitSegment = _linesTable[splitPair];
+                            }
+                        }
+                    }
+                }
             } else {
                 pVI->setIsCurrentItem(false);
             }
         }
         emit currentPlanViewIndexChanged();
         emit currentPlanViewItemChanged();
+        emit splitSegmentChanged();
     }
 }
 
@@ -2173,4 +2221,22 @@ void MissionController::_updateTimeout()
 void MissionController::_complexBoundingBoxChanged()
 {
     _updateTimer.start(UPDATE_TIMEOUT);
+}
+
+bool MissionController::isEmpty(void) const
+{
+    return _visualItems->count() <= 1;
+}
+
+int MissionController::visualItemIndexFromSequenceNumber(int sequenceNumber) const
+{
+    for (int i=0; i<_visualItems->count(); i++) {
+        const VisualMissionItem* vi = _visualItems->value<VisualMissionItem*>(i);
+        if (vi->sequenceNumber() == sequenceNumber) {
+            return i;
+        }
+    }
+
+    qWarning() << "MissionController::getVisualItemIndex visual item not found";
+    return 0;
 }

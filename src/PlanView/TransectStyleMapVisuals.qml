@@ -22,7 +22,8 @@ import QGroundControl.FlightMap     1.0
 Item {
     id: _root
 
-    property var map        ///< Map control to place item in
+    property var    map                                                 ///< Map control to place item in
+    property bool   polygonInteractive: true
 
     property var    _missionItem:               object
     property var    _mapPolygon:                object.surveyAreaPolygon
@@ -39,24 +40,17 @@ Item {
     property var    _exitTransectsComponent:    null
     property var    _entryCoordinate
     property var    _exitCoordinate
-    property var    _dynamicComponents: [ ]
 
     signal clicked(int sequenceNumber)
 
     function _addVisualElements() {
         var toAdd = [ fullTransectsComponent, entryTransectComponent, exitTransectComponent, entryPointComponent, exitPointComponent,
                      entryArrow1Component, entryArrow2Component, exitArrow1Component, exitArrow2Component ]
-        for (var i=0; i<toAdd.length; i++) {
-            _dynamicComponents.push(toAdd[i].createObject(map))
-            map.addMapItem(_dynamicComponents[_dynamicComponents.length -1])
-        }
+        objMgr.createObjects(toAdd, map, true /* parentObjectIsMap */)
     }
 
     function _destroyVisualElements() {
-        for (var i=0; i<_dynamicComponents.length; i++) {
-            _dynamicComponents[i].destroy()
-        }
-        _dynamicComponents = [ ]
+        objMgr.destroyObjects()
     }
 
     Component.onCompleted: {
@@ -67,12 +61,16 @@ Item {
         _destroyVisualElements()
     }
 
+    QGCDynamicObjectManager {
+        id: objMgr
+    }
+
     // Area polygon
     QGCMapPolygonVisuals {
         id:                 mapPolygonVisuals
         mapControl:         map
         mapPolygon:         _mapPolygon
-        interactive:        _missionItem.isCurrentItem
+        interactive:        polygonInteractive && _missionItem.isCurrentItem
         borderWidth:        1
         borderColor:        "black"
         interiorColor:      "green"
