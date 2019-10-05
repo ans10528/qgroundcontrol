@@ -60,6 +60,12 @@ public:
         VWorldSatellite          = 801,
         VWorldStreet             = 802,
 
+        GoogleChinaMap          = 2001,
+        GoogleChinaSatellite    = 2004,
+        GoogleChinaLabels       = 2008,
+        GoogleChinaTerrain      = 2016,
+        GoogleChinaHybrid       = 2020,
+
         MapboxStreets           = 6000,
         MapboxLight             = 6001,
         MapboxDark              = 6002,

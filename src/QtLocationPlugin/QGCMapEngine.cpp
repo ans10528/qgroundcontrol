@@ -59,8 +59,12 @@ static stQGeoTileCacheQGCMapTypes kMapTypes[] = {
     {"ENIRO Terrain Map",       UrlFactory::EniroTopo},
 
     {"VWorld Satellite Map",     UrlFactory::VWorldSatellite},
-    {"VWorld Street Map",        UrlFactory::VWorldStreet}
+    {"VWorld Street Map",        UrlFactory::VWorldStreet},
 
+    {"GoogleChina Street Map",       UrlFactory::GoogleChinaMap},
+    {"GoogleChina Satellite Map",    UrlFactory::GoogleChinaSatellite},
+    {"GoogleChina Terrain Map",      UrlFactory::GoogleChinaTerrain},
+    {"GoogleChina Hybrid Map",      UrlFactory::GoogleChinaHybrid},
     /*
     {"MapQuest Street Map",     UrlFactory::MapQuestMap},
     {"MapQuest Satellite Map",  UrlFactory::MapQuestSat}
@@ -532,6 +536,11 @@ QGCMapEngine::concurrentDownloads(UrlFactory::MapType type)
     case UrlFactory::VWorldMap:
     case UrlFactory::VWorldSatellite:
     case UrlFactory::VWorldStreet:
+    case UrlFactory::GoogleChinaMap:
+    case UrlFactory::GoogleChinaSatellite:
+    case UrlFactory::GoogleChinaLabels:
+    case UrlFactory::GoogleChinaTerrain:
+    case UrlFactory::GoogleChinaHybrid:
         return 12;
     /*
     case UrlFactory::MapQuestMap:

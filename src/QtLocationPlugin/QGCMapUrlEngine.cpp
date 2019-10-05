@@ -94,6 +94,10 @@ UrlFactory::getImageFormat(MapType type, const QByteArray& image)
                 case GoogleHybrid:
                 case BingMap:
                 case StatkartTopo:
+                case GoogleChinaMap:
+                case GoogleChinaLabels:
+                case GoogleChinaTerrain:
+                case GoogleChinaHybrid:
                     format = "png";
                     break;
                 case EniroTopo:
@@ -198,6 +202,14 @@ UrlFactory::getTileURL(MapType type, int x, int y, int zoom, QNetworkAccessManag
             request.setRawHeader("Referrer", "https://api.airmap.com/");
             break;
 
+        case GoogleChinaMap:
+        case GoogleChinaSatellite:
+        case GoogleChinaLabels:
+        case GoogleChinaTerrain:
+        case GoogleChinaHybrid:
+            request.setRawHeader("Referrer", "http://ditu.google.cn/");
+            break;
+
         default:
             break;
     }
@@ -283,6 +295,52 @@ UrlFactory::_getURL(MapType type, int x, int y, int zoom, QNetworkAccessManager*
         _getSecGoogleWords(x, y, sec1, sec2);
         _tryCorrectGoogleVersions(networkManager);
         return QString("http://%1%2.google.com/%3/lyrs=%4&hl=%5&x=%6%7&y=%8&z=%9&s=%10").arg(server).arg(_getServerNum(x, y, 4)).arg(request).arg(_versionGoogleHybrid).arg(_language).arg(x).arg(sec1).arg(y).arg(zoom).arg(sec2);
+    }
+    break;
+    case GoogleChinaMap:
+    {
+        // http://mt1.google.com/vt/lyrs=m
+        QString server  = "mt";
+        QString request = "vt";
+        QString sec1    = ""; // after &x=...
+        QString sec2    = ""; // after &zoom=...
+        _getSecGoogleWords(x, y, sec1, sec2);
+        _tryCorrectGoogleVersions(networkManager);
+        return QString("http://%1%2.google.cn/%3/lyrs=%4&hl=%5&gl=cn&x=%6%7&y=%8&z=%9&s=%10").arg(server).arg(_getServerNum(x, y, 4)).arg(request).arg(QStringLiteral("m")).arg(QStringLiteral("zh-CN")).arg(x).arg(sec1).arg(y).arg(zoom).arg(sec2);
+    }
+    break;
+    case GoogleChinaSatellite:
+    {
+        // http://mt1.google.cn/vt/lyrs=s
+        QString server  = "mt";
+        QString request = "vt";
+        QString sec1    = ""; // after &x=...
+        QString sec2    = ""; // after &zoom=...
+        _getSecGoogleWords(x, y, sec1, sec2);
+        _tryCorrectGoogleVersions(networkManager);
+        return QString("http://%1%2.google.cn/%3/lyrs=%4&gl=cn&x=%5%6&y=%7&z=%8&s=%9").arg(server).arg(_getServerNum(x, y, 4)).arg(request).arg(QStringLiteral("s")).arg(x).arg(sec1).arg(y).arg(zoom).arg(sec2);
+    }
+    break;
+    case GoogleChinaTerrain:
+    {
+        QString server  = "mt";
+        QString request = "vt";
+        QString sec1    = ""; // after &x=...
+        QString sec2    = ""; // after &zoom=...
+        _getSecGoogleWords(x, y, sec1, sec2);
+        _tryCorrectGoogleVersions(networkManager);
+        return QString("http://%1%2.google.cn/%3/v=%4&hl=%5&gl=cn&x=%6%7&y=%8&z=%9&s=%10").arg(server).arg(_getServerNum(x, y, 4)).arg(request).arg(QStringLiteral("t,r")).arg(QStringLiteral("zh-CN")).arg(x).arg(sec1).arg(y).arg(zoom).arg(sec2);
+    }
+    break;
+    case GoogleChinaHybrid:
+    {
+        QString server  = "mt";
+        QString request = "vt";
+        QString sec1    = ""; // after &x=...
+        QString sec2    = ""; // after &zoom=...
+        _getSecGoogleWords(x, y, sec1, sec2);
+        _tryCorrectGoogleVersions(networkManager);
+        return QString("http://%1%2.google.cn/%3/lyrs=%4&hl=%5&gl=cn&x=%6%7&y=%8&z=%9&s=%10").arg(server).arg(_getServerNum(x, y, 4)).arg(request).arg(QStringLiteral("y")).arg(QStringLiteral("zh-CN")).arg(x).arg(sec1).arg(y).arg(zoom).arg(sec2);
     }
     break;
 #endif
